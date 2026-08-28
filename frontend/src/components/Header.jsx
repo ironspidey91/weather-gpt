@@ -3,7 +3,7 @@ import { Search, MapPin, Volume2, VolumeX, ShieldAlert, Radio, Sun, Moon, Naviga
 import { motion, AnimatePresence } from 'framer-motion';
 import { CITY_LIST } from '../services/weatherService';
 
-export default function Header({ currentCity, onSelectCity, speechEnabled, setSpeechEnabled, activeAlertCount, theme, setTheme, onLocate, locating }) {
+export default function Header({ currentCity, onSelectCity, speechEnabled, setSpeechEnabled, activeAlertCount, theme, setTheme, onLocate, locating, onAlertClick }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -147,18 +147,6 @@ export default function Header({ currentCity, onSelectCity, speechEnabled, setSp
 
         {/* Controls */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Voice Toggle */}
-          <button
-            onClick={() => setSpeechEnabled(!speechEnabled)}
-            className="btn-icon"
-            style={speechEnabled ? { borderColor: 'rgba(6, 182, 212, 0.4)', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.1)' } : {}}
-            title={speechEnabled ? "Voice Output Active" : "Enable Voice Output"}
-            id="voice-toggle-btn"
-            aria-label="Toggle voice output"
-          >
-            {speechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </button>
-
           {/* Theme Toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -179,21 +167,15 @@ export default function Header({ currentCity, onSelectCity, speechEnabled, setSp
 
           {/* Alert Badge */}
           <div className="relative">
-            <button className="btn-icon" style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.06)' }} id="alerts-btn" aria-label="Weather alerts">
+            <button onClick={onAlertClick} className="btn-icon" style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.06)' }} id="alerts-btn" aria-label="Weather alerts">
               <ShieldAlert className="w-4 h-4" />
               {activeAlertCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold rounded-full flex items-center justify-center animate-bounce"
+                <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold rounded-full flex items-center justify-center"
                   style={{ backgroundColor: 'var(--accent-rose)', color: '#fff' }}>
                   {activeAlertCount}
                 </span>
               )}
             </button>
-          </div>
-
-          {/* INSAT badge (desktop) */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-bold"
-            style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)', color: 'var(--accent-indigo)' }}>
-            <Radio className="w-3 h-3 animate-pulse" /> INSAT-3DR
           </div>
         </div>
 

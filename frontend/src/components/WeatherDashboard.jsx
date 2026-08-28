@@ -146,7 +146,7 @@ export default function WeatherDashboard({ weatherData }) {
         </div>
 
         {/* Quick metrics row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-glass)' }}>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-glass)' }}>
           <MetricCard icon={Droplets}     label="Humidity"   value={humidity}   unit="%"   accent="#3b82f6" />
           <MetricCard icon={Gauge}        label="Pressure"   value={pressure}   unit="hPa" accent="#6366f1" />
           <MetricCard icon={Sun}          label="UV Index"   value={uvIndex}    unit="/11" accent="#f59e0b" />

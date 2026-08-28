@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { Layers, Maximize2, Minimize2, Thermometer, Wind, Cloud, Satellite } from 'lucide-react';
 import { motion } from 'framer-motion';
 import L from 'leaflet';
 
@@ -12,51 +12,174 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const TILE_LAYERS = {
-  dark: {
-    url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://stadiamaps.com/">Stadia</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+// ── Map layer configurations (all free, no API key needed) ──
+const MAP_LAYERS = {
+  standard: {
+    label: 'Standard',
+    icon: Layers,
+    base: {
+      dark: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      },
+      light: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      },
+    },
+    overlay: null,
   },
-  light: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }
+  temperature: {
+    label: 'Thermal',
+    icon: Thermometer,
+    base: {
+      dark: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; Stadia &copy; OSM',
+      },
+      light: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OSM',
+      },
+    },
+    overlay: {
+      url: 'https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=b1b15e88fa797225412429c1c50c122a1',
+      attribution: '&copy; OpenWeatherMap',
+      opacity: 0.6,
+    },
+  },
+  wind: {
+    label: 'Wind',
+    icon: Wind,
+    base: {
+      dark: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; Stadia &copy; OSM',
+      },
+      light: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OSM',
+      },
+    },
+    overlay: {
+      url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=b1b15e88fa797225412429c1c50c122a1',
+      attribution: '&copy; OpenWeatherMap',
+      opacity: 0.5,
+    },
+  },
+  satellite: {
+    label: 'Satellite',
+    icon: Satellite,
+    base: {
+      dark: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri &mdash; Esri, DigitalGlobe, GeoEye, Earthstar, CNES/Airbus DS, USDA, AeroGRID, IGN',
+      },
+      light: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri &mdash; Esri, DigitalGlobe, GeoEye, Earthstar',
+      },
+    },
+    overlay: null,
+  },
 };
 
 // Recenter map when city changes
 function MapUpdater({ center, zoom }) {
   const map = useMap();
-  useMemo(() => {
+
+  useEffect(() => {
     map.setView(center, zoom, { animate: true, duration: 0.8 });
+    setTimeout(() => map.invalidateSize(), 100);
   }, [center, zoom, map]);
+
   return null;
 }
 
 export default function WeatherMap({ weatherData, theme }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [activeLayer, setActiveLayer] = useState('standard');
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef(null);
+
   const { city, coords, temperature, condition, humidity, windSpeed, windCompass } = weatherData;
   const center = [coords.lat, coords.lon];
-  const tileLayer = theme === 'light' ? TILE_LAYERS.light : TILE_LAYERS.dark;
+  const themeKey = theme === 'light' ? 'light' : 'dark';
+  const layer = MAP_LAYERS[activeLayer];
+  const baseLayer = layer.base[themeKey];
+
+  // Lazy mount: only render the MapContainer when scrolled into view
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.05, rootMargin: '200px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleMapReady = useCallback((e) => {
+    const map = e.target;
+    setTimeout(() => map.invalidateSize(), 50);
+    setTimeout(() => map.invalidateSize(), 300);
+    setTimeout(() => map.invalidateSize(), 800);
+  }, []);
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className={`glass-card overflow-hidden relative ${isExpanded ? 'fixed inset-4 z-50' : ''}`}
-      style={{ border: '1px solid var(--border-glass)' }}
+      className={`glass-card relative ${isExpanded ? 'fixed inset-4 z-50' : ''}`}
+      style={{ border: '1px solid var(--border-glass)', flexShrink: 0, minHeight: isExpanded ? undefined : '380px', overflow: 'hidden' }}
     >
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-glass)' }}>
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-glass)' }}>
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4" style={{ color: 'var(--accent-cyan)' }} />
           <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Live Weather Map</h3>
-          <span className="badge badge-emerald text-[8px] py-0">Interactive</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)' }}>
+
+        <div className="flex items-center gap-1.5">
+          {/* Layer switcher pills */}
+          {Object.entries(MAP_LAYERS).map(([key, cfg]) => {
+            const Icon = cfg.icon;
+            const isActive = activeLayer === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveLayer(key)}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                style={isActive
+                  ? { background: 'var(--accent-cyan)', color: 'var(--bg-primary)' }
+                  : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', border: '1px solid transparent' }
+                }
+                title={cfg.label}
+              >
+                <Icon className="w-3 h-3" />
+                <span className="hidden sm:inline">{cfg.label}</span>
+              </button>
+            );
+          })}
+
+          <div className="w-px h-5 mx-1" style={{ background: 'var(--border-glass)' }}></div>
+
+          {/* Coordinates */}
+          <div className="text-[10px] font-mono px-2 py-0.5 rounded hidden md:block" style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)' }}>
             {coords.lat.toFixed(4)}°N, {coords.lon.toFixed(4)}°E
           </div>
+
+          {/* Expand */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="btn-icon w-7 h-7"
@@ -67,30 +190,45 @@ export default function WeatherMap({ weatherData, theme }) {
         </div>
       </div>
 
-      {/* Map */}
-      <div style={{ height: isExpanded ? 'calc(100% - 48px)' : '280px' }}>
-        <MapContainer
-          center={center}
-          zoom={10}
-          scrollWheelZoom={true}
-          zoomControl={true}
-          style={{ height: '100%', width: '100%' }}
-          className="z-10"
-        >
-          <MapUpdater center={center} zoom={10} />
-          <TileLayer url={tileLayer.url} attribution={tileLayer.attribution} />
-          <Marker position={center}>
-            <Popup>
-              <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', lineHeight: 1.5, minWidth: '140px' }}>
-                <strong style={{ fontSize: '13px' }}>{city}</strong>
-                <br />
-                {condition} &bull; <strong>{temperature}°C</strong>
-                <br />
-                Humidity: {humidity}% &bull; Wind: {windSpeed} km/h {windCompass}
-              </div>
-            </Popup>
-          </Marker>
-        </MapContainer>
+      {/* Map container */}
+      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%' }}>
+        {isVisible ? (
+          <MapContainer
+            key={activeLayer + themeKey}
+            center={center}
+            zoom={10}
+            scrollWheelZoom={true}
+            zoomControl={true}
+            style={{ height: '100%', width: '100%' }}
+            className="z-10"
+            whenReady={handleMapReady}
+          >
+            <MapUpdater center={center} zoom={10} />
+            {/* Base layer */}
+            <TileLayer url={baseLayer.url} attribution={baseLayer.attribution} />
+            {/* Overlay layer (thermal, wind, etc.) */}
+            {layer.overlay && (
+              <TileLayer
+                url={layer.overlay.url}
+                attribution={layer.overlay.attribution}
+                opacity={layer.overlay.opacity || 0.5}
+              />
+            )}
+            <Marker position={center}>
+              <Popup>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', lineHeight: 1.5, minWidth: '140px' }}>
+                  <strong style={{ fontSize: '13px' }}>{city}</strong>
+                  <br />
+                  {condition} &bull; <strong>{temperature}°C</strong>
+                  <br />
+                  Humidity: {humidity}% &bull; Wind: {windSpeed} km/h {windCompass}
+                </div>
+              </Popup>
+            </Marker>
+          </MapContainer>
+        ) : (
+          <div className="skeleton" style={{ height: '100%', width: '100%', borderRadius: 0 }}></div>
+        )}
       </div>
 
       {/* Overlay when expanded */}

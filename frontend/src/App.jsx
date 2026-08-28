@@ -20,6 +20,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('wgpt-theme') || 'dark');
   const [locating, setLocating] = useState(false);
   const [mobileTab, setMobileTab] = useState('chat');
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
 
   // Apply theme
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function App() {
   ];
 
   return (
-    <div className="app-wrapper" style={{ minHeight: '100vh', color: 'var(--text-primary)' }}>
+    <div className="app-wrapper">
       {/* Toast notifications */}
       <Toaster
         position="top-right"
@@ -102,112 +103,106 @@ export default function App() {
         setTheme={setTheme}
         onLocate={handleLocate}
         locating={locating}
+        onAlertClick={() => setAlertModalOpen(true)}
       />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-5 flex-1 w-full">
-
-        {loading || !weatherData ? (
-          /* Loading skeleton */
-          <div className="space-y-4 animate-fade-in">
-            <SkeletonBlock h="60px" />
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-5">
-                <SkeletonBlock h="620px" />
-              </div>
-              <div className="lg:col-span-7 space-y-4">
-                <SkeletonBlock h="200px" />
-                <SkeletonBlock h="100px" />
-                <SkeletonBlock h="250px" />
-              </div>
+      {loading || !weatherData ? (
+        /* Loading skeleton */
+        <div className="skeleton-container animate-fade-in">
+          <SkeletonBlock h="60px" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-5">
+              <SkeletonBlock h="620px" />
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Alerts Banner */}
-            <AlertsBanner weatherData={weatherData} />
-
-            {/* Mobile Tab Navigation */}
-            <div className="show-mobile-only">
-              <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-glass)' }}>
-                {MOBILE_TABS.map(tab => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setMobileTab(tab.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all"
-                      style={mobileTab === tab.id
-                        ? { background: 'var(--accent-cyan)', color: 'var(--bg-primary)' }
-                        : { color: 'var(--text-muted)' }
-                      }
-                    >
-                      <Icon className="w-3.5 h-3.5" /> {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="lg:col-span-7 space-y-4">
+              <SkeletonBlock h="200px" />
+              <SkeletonBlock h="100px" />
+              <SkeletonBlock h="250px" />
             </div>
-
-            {/* Desktop: Split Layout */}
-            <div className="hide-mobile">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                {/* Left: Chat */}
-                <div className="lg:col-span-5">
-                  <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} />
-                </div>
-                {/* Right: Dashboard + Charts + Map + Climate */}
-                <div className="lg:col-span-7 space-y-4">
-                  <WeatherDashboard weatherData={weatherData} />
-                  <ForecastCharts weatherData={weatherData} />
-                  <WeatherMap weatherData={weatherData} theme={theme} />
-                  <ClimateInsights weatherData={weatherData} />
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile: Tab Content */}
-            <div className="show-mobile-only">
-              <AnimatePresence mode="wait">
-                {mobileTab === 'chat' && (
-                  <motion.div key="chat" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
-                    <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} />
-                  </motion.div>
-                )}
-                {mobileTab === 'dashboard' && (
-                  <motion.div key="dashboard" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-4">
-                    <WeatherDashboard weatherData={weatherData} />
-                    <ForecastCharts weatherData={weatherData} />
-                    <ClimateInsights weatherData={weatherData} />
-                  </motion.div>
-                )}
-                {mobileTab === 'map' && (
-                  <motion.div key="map" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
-                    <WeatherMap weatherData={weatherData} theme={theme} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-          </div>
-        )}
-
-      </main>
-
-      {/* Footer */}
-      <footer className="glass-panel py-4 mt-8" style={{ borderTop: '1px solid var(--border-glass)' }}>
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px]" style={{ color: 'var(--text-muted)' }}>
-          <div className="flex items-center gap-2">
-            <span className="font-bold" style={{ color: 'var(--text-primary)' }}>WeatherGPT</span>
-            <span>&bull; Smart India Hackathon (SIH26068)</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span>Ministry of Earth Sciences (MoES)</span>
-            <span>&bull; Open-Meteo API</span>
-            <span>&bull; INSAT-3DR Synced</span>
           </div>
         </div>
-      </footer>
+      ) : (
+        <>
+          {/* Mobile Tab Navigation */}
+          <div className="show-mobile-only" style={{ padding: '0.5rem 1rem 0' }}>
+            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-glass)' }}>
+              {MOBILE_TABS.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setMobileTab(tab.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all"
+                    style={mobileTab === tab.id
+                      ? { background: 'var(--accent-cyan)', color: 'var(--bg-primary)' }
+                      : { color: 'var(--text-muted)' }
+                    }
+                  >
+                    <Icon className="w-3.5 h-3.5" /> {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ═══ Desktop: Two-pane layout ═══ */}
+          <div className="desktop-layout hide-mobile">
+            {/* Left pane: Chat (fixed to viewport) */}
+            <aside className="chat-pane">
+              <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} />
+            </aside>
+
+            {/* Right pane: Scrollable dashboard */}
+            <main className="dashboard-pane">
+              <AlertsBanner weatherData={weatherData} externalOpen={alertModalOpen} onExternalClose={() => setAlertModalOpen(false)} />
+              <WeatherDashboard weatherData={weatherData} />
+              <ForecastCharts weatherData={weatherData} />
+              <WeatherMap weatherData={weatherData} theme={theme} />
+              <ClimateInsights weatherData={weatherData} />
+
+              {/* Footer inline */}
+              <footer className="inline-footer">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>WeatherGPT</span>
+                    <span>&bull; Smart India Hackathon (SIH26068)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span>Ministry of Earth Sciences (MoES)</span>
+                    <span>&bull; Open-Meteo API</span>
+                    <span>&bull; INSAT-3DR Synced</span>
+                  </div>
+                </div>
+              </footer>
+            </main>
+          </div>
+
+          {/* ═══ Mobile: Tab Content ═══ */}
+          <div className="show-mobile-only" style={{ padding: '0.75rem 1rem 1rem' }}>
+            <AnimatePresence mode="wait">
+              {mobileTab === 'chat' && (
+                <motion.div key="chat" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
+                  <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} />
+                </motion.div>
+              )}
+              {mobileTab === 'dashboard' && (
+                <motion.div key="dashboard" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-4">
+                  <AlertsBanner weatherData={weatherData} externalOpen={alertModalOpen} onExternalClose={() => setAlertModalOpen(false)} />
+                  <WeatherDashboard weatherData={weatherData} />
+                  <ForecastCharts weatherData={weatherData} />
+                  <ClimateInsights weatherData={weatherData} />
+                </motion.div>
+              )}
+              {mobileTab === 'map' && (
+                <motion.div key="map" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
+                  <WeatherMap weatherData={weatherData} theme={theme} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </>
+      )}
     </div>
   );
 }

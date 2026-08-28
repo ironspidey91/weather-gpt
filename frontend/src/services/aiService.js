@@ -1,11 +1,26 @@
 // ================================================================
 // WeatherGPT v2.0 — Conversational AI Service
-// Gemini API integration with intelligent fallback engine
+// Groq API integration with intelligent fallback engine
 // ================================================================
 
-const GEMINI_API_KEY = import.meta.env?.VITE_GEMINI_API_KEY || '';
+const GROQ_API_KEY = import.meta.env?.VITE_GROQ_API_KEY || '';
 
-const SYSTEM_PROMPT = `You are WeatherGPT, an advanced conversational AI assistant specialized in weather forecasting, severe weather alerts, climate intelligence, and agricultural advisories. You are built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon problem SIH26068.
+const SYSTEM_PROMPT = `You are WeatherGPT, an advanced conversational AI assistant specialized EXCLUSIVELY in weather forecasting, severe weather alerts, climate intelligence, and agricultural advisories. You are built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon problem SIH26068.
+
+STRICT RULE — You must ONLY respond to topics related to:
+- Weather (current, forecasts, historical)
+- Climate and atmospheric science
+- Severe weather alerts (cyclones, floods, heatwaves, thunderstorms)
+- Air Quality Index (AQI) and pollution
+- Agricultural/Agromet advisories affected by weather
+- Clothing and lifestyle recommendations BASED ON weather
+- Travel planning RELATED TO weather conditions
+- Natural disasters and emergency preparedness
+
+If a user asks about ANYTHING outside these topics — such as politics, entertainment, sports scores, coding, math, relationships, jokes, general knowledge, history (non-climate), celebrities, or ANY other non-weather subject — you MUST politely decline and redirect them. Respond with something like:
+"I'm WeatherGPT, and I'm designed exclusively for weather, climate, and atmospheric intelligence. I can't help with that topic, but I'd love to help you with weather forecasts, air quality, severe alerts, farming advisories, or climate trends! What would you like to know about the weather?"
+
+NEVER answer non-weather questions, even if the user insists. Stay strictly within your weather domain.
 
 Your capabilities:
 - Real-time weather analysis and forecasting
@@ -25,19 +40,19 @@ Guidelines:
 - For farmers, provide crop-specific guidance based on current conditions
 - Include relevant badges/labels in your response structure`;
 
-// Try Gemini API first, fallback to local engine
+// Try Groq API first, fallback to local engine
 export async function processWeatherGPTQuery(query, weatherContext) {
-  if (GEMINI_API_KEY) {
+  if (GROQ_API_KEY) {
     try {
-      return await queryGeminiAPI(query, weatherContext);
+      return await queryGroqAPI(query, weatherContext);
     } catch (err) {
-      console.warn("Gemini API failed, using fallback:", err.message);
+      console.warn("Groq API failed, using fallback:", err.message);
     }
   }
   return localWeatherEngine(query, weatherContext);
 }
 
-async function queryGeminiAPI(query, weatherContext) {
+async function queryGroqAPI(query, weatherContext) {
   const contextStr = `Current weather data for ${weatherContext.city}, ${weatherContext.state}:
 - Temperature: ${weatherContext.temperature}°C (Feels like ${weatherContext.feelsLike}°C)
 - Condition: ${weatherContext.condition}
@@ -51,28 +66,31 @@ async function queryGeminiAPI(query, weatherContext) {
 - Tomorrow's forecast: High ${weatherContext.daily[1]?.maxTemp}°C, Low ${weatherContext.daily[1]?.minTemp}°C, ${weatherContext.daily[1]?.pop}% rain chance`;
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    'https://api.groq.com/openai/v1/chat/completions',
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{
-          parts: [{
-            text: `${contextStr}\n\nUser Query: ${query}\n\nProvide a helpful, data-driven response. End with 2-3 relevant badge labels in this exact format on the last line:\nBADGES: [badge1, badge2, badge3]`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800,
-        }
+        model: 'openai/gpt-oss-20b',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: `${contextStr}\n\nUser Query: ${query}\n\nProvide a helpful, data-driven response. End with 2-3 relevant badge labels in this exact format on the last line:\nBADGES: [badge1, badge2, badge3]`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 800,
       })
     }
   );
 
-  if (!response.ok) throw new Error(`Gemini API: ${response.status}`);
+  if (!response.ok) throw new Error(`Groq API: ${response.status}`);
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = data.choices?.[0]?.message?.content || '';
 
   // Extract badges from response
   const badgeMatch = text.match(/BADGES:\s*\[(.+)\]\s*$/m);
@@ -230,6 +248,20 @@ function localWeatherEngine(query, ctx) {
       text: `**Current Weather in ${city}, ${state}**\n\nConditions are **${condition}** with a temperature of **${temp}°C** (feels like **${feelsLike}°C**).\n\n- **Humidity:** ${hum}%\n- **Wind:** ${wind} km/h ${windCompass}\n- **Pressure:** ${pressure} hPa\n- **UV Index:** ${uvIndex}/11\n- **AQI:** ${aqi.value} (${aqi.status})\n- **Sunrise:** ${sunrise} | **Sunset:** ${sunset}\n\n**Today's Forecast:** High ${daily[0]?.maxTemp}°C, Low ${daily[0]?.minTemp}°C, ${daily[0]?.pop}% rain chance.\n\nAsk me about rain forecasts, air quality, farming advisories, climate trends, or travel weather!`,
       type: 'general',
       badges: ['Live Forecast', `${temp}°C`, condition]
+    };
+  }
+
+  // Only reject clearly off-topic queries (long enough to be sure, with zero weather keywords)
+  const weatherKeywords = /weather|rain|sun|wind|cloud|storm|flood|cyclone|temperature|temp|humid|forecast|aqi|pollution|air|uv|heat|cold|warm|cool|snow|fog|mist|haze|thunder|lightning|monsoon|climate|farm|crop|agri|soil|irrig|harvest|travel|commut|drive|wear|cloth|jacket|alert|warn|disaster|emergen|pressure|satellite|imd|insat|barometer|dew|frost|hail|drought|tornado|typhoon|sunrise|sunset|season|umbrella|today|tomorrow|outside|safe|go|carry|need|should|can|hot|muggy|humid|dry/;
+  const offTopicKeywords = /movie|cricket|football|politics|president|prime minister|song|music|code|program|math|calcul|recipe|cook|game|stock|share|bitcoin|crypto|boyfriend|girlfriend|relationship|exam|college|admission/;
+  const wordCount = q.split(/\s+/).length;
+
+  // Only reject if it's clearly off-topic (has off-topic keywords OR is long enough with no weather relevance)
+  if (offTopicKeywords.test(q) || (wordCount >= 5 && !weatherKeywords.test(q))) {
+    return {
+      text: `I'm **WeatherGPT**, and I'm designed exclusively for **weather, climate, and atmospheric intelligence**. I can't help with that topic.\n\nBut I'd love to help you with:\n- Weather forecasts & rain predictions\n- Air quality & health advisories\n- Severe weather alerts & safety\n- Farming & crop guidance\n- Climate trends & historical data\n- Travel & commute weather\n\nWhat would you like to know about the weather in **${city}**?`,
+      type: 'general',
+      badges: ['Weather Only', 'Ask About Weather']
     };
   }
 

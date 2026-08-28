@@ -141,7 +141,7 @@ export default function ChatInterface({ weatherData, speechEnabled }) {
   const badgeClass = (type) => TYPE_BADGE_MAP[type] || 'badge-cyan';
 
   return (
-    <div className="glass-card flex flex-col overflow-hidden shadow-2xl relative" style={{ height: '640px', borderColor: 'var(--border-glass)' }}>
+    <div className="glass-card flex flex-col overflow-hidden shadow-2xl relative" style={{ height: '100%', minHeight: '500px', borderColor: 'var(--border-glass)' }}>
 
       {/* Chat Header */}
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-glass)', background: 'var(--bg-elevated)' }}>

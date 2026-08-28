@@ -105,9 +105,16 @@ const SEVERITY_COLORS = {
   YELLOW: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.35)', text: '#fbbf24', badgeClass: 'badge-amber' },
 };
 
-export default function AlertsBanner({ weatherData }) {
+export default function AlertsBanner({ weatherData, externalOpen, onExternalClose }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  // Allow external trigger (header alert button)
+  const isModalOpen = modalOpen || externalOpen;
+  const closeModal = () => {
+    setModalOpen(false);
+    if (onExternalClose) onExternalClose();
+  };
   const alerts = generateAlerts(weatherData);
   const topAlert = alerts[0];
   const sev = SEVERITY_COLORS[topAlert.severity] || SEVERITY_COLORS.YELLOW;
@@ -157,14 +164,14 @@ export default function AlertsBanner({ weatherData }) {
 
       {/* Modal */}
       <AnimatePresence>
-        {modalOpen && (
+        {isModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-            onClick={() => setModalOpen(false)}
+            onClick={closeModal}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -175,7 +182,7 @@ export default function AlertsBanner({ weatherData }) {
               style={{ border: `1px solid ${sev.border}` }}
               onClick={e => e.stopPropagation()}
             >
-              <button onClick={() => setModalOpen(false)}
+              <button onClick={closeModal}
                 className="absolute top-4 right-4 p-1 rounded-lg transition-colors"
                 style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)' }}>
                 <X className="w-5 h-5" />
