@@ -5,7 +5,22 @@
 
 const GEMINI_API_KEY = import.meta.env?.VITE_GEMINI_API_KEY || '';
 
-const SYSTEM_PROMPT = `You are WeatherGPT, an advanced conversational AI assistant specialized in weather forecasting, severe weather alerts, climate intelligence, and agricultural advisories. You are built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon problem SIH26068.
+const SYSTEM_PROMPT = `You are WeatherGPT, an advanced conversational AI assistant specialized EXCLUSIVELY in weather forecasting, severe weather alerts, climate intelligence, and agricultural advisories. You are built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon problem SIH26068.
+
+STRICT RULE — You must ONLY respond to topics related to:
+- Weather (current, forecasts, historical)
+- Climate and atmospheric science
+- Severe weather alerts (cyclones, floods, heatwaves, thunderstorms)
+- Air Quality Index (AQI) and pollution
+- Agricultural/Agromet advisories affected by weather
+- Clothing and lifestyle recommendations BASED ON weather
+- Travel planning RELATED TO weather conditions
+- Natural disasters and emergency preparedness
+
+If a user asks about ANYTHING outside these topics — such as politics, entertainment, sports scores, coding, math, relationships, jokes, general knowledge, history (non-climate), celebrities, or ANY other non-weather subject — you MUST politely decline and redirect them. Respond with something like:
+"I'm WeatherGPT, and I'm designed exclusively for weather, climate, and atmospheric intelligence. I can't help with that topic, but I'd love to help you with weather forecasts, air quality, severe alerts, farming advisories, or climate trends! What would you like to know about the weather?"
+
+NEVER answer non-weather questions, even if the user insists. Stay strictly within your weather domain.
 
 Your capabilities:
 - Real-time weather analysis and forecasting
@@ -230,6 +245,16 @@ function localWeatherEngine(query, ctx) {
       text: `**Current Weather in ${city}, ${state}**\n\nConditions are **${condition}** with a temperature of **${temp}°C** (feels like **${feelsLike}°C**).\n\n- **Humidity:** ${hum}%\n- **Wind:** ${wind} km/h ${windCompass}\n- **Pressure:** ${pressure} hPa\n- **UV Index:** ${uvIndex}/11\n- **AQI:** ${aqi.value} (${aqi.status})\n- **Sunrise:** ${sunrise} | **Sunset:** ${sunset}\n\n**Today's Forecast:** High ${daily[0]?.maxTemp}°C, Low ${daily[0]?.minTemp}°C, ${daily[0]?.pop}% rain chance.\n\nAsk me about rain forecasts, air quality, farming advisories, climate trends, or travel weather!`,
       type: 'general',
       badges: ['Live Forecast', `${temp}°C`, condition]
+    };
+  }
+
+  // Check if query is non-weather related before fallback
+  const weatherKeywords = /weather|rain|sun|wind|cloud|storm|flood|cyclone|temperature|temp|humid|forecast|aqi|pollution|air|uv|heat|cold|warm|cool|snow|fog|mist|haze|thunder|lightning|monsoon|climate|farm|crop|agri|soil|irrig|harvest|travel|commut|drive|wear|cloth|jacket|alert|warn|disaster|emergen|pressure|satellite|imd|insat|barometer|dew|frost|hail|drought|tornado|typhoon|sunrise|sunset|season|umbrella/;
+  if (!weatherKeywords.test(q) && !q.match(/^(hi|hello|hey|namaste|good|what|how|tell|brief|summary|overview|current|now|status)/)) {
+    return {
+      text: `I'm **WeatherGPT**, and I'm designed exclusively for **weather, climate, and atmospheric intelligence**. I can't help with that topic.\n\nBut I'd love to help you with:\n- Weather forecasts & rain predictions\n- Air quality & health advisories\n- Severe weather alerts & safety\n- Farming & crop guidance\n- Climate trends & historical data\n- Travel & commute weather\n\nWhat would you like to know about the weather in **${city}**?`,
+      type: 'general',
+      badges: ['Weather Only', 'Ask About Weather']
     };
   }
 
