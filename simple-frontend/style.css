@@ -1,0 +1,320 @@
+:root {
+  --sky-deep: #0b1d3a;
+  --sky-mid: #1b3a63;
+  --sky-glow: #3a6ea5;
+  --cloud: #eaf1fb;
+  --cloud-dim: #a9bcd6;
+  --accent-rain: #5fb4dd;
+  --accent-warm: #f2a65a;
+  --panel: rgba(234, 241, 251, 0.06);
+  --panel-border: rgba(234, 241, 251, 0.12);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--cloud);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(160deg, var(--sky-deep) 0%, var(--sky-mid) 55%, var(--sky-glow) 100%);
+  background-size: 200% 200%;
+  animation: driftSky 22s ease-in-out infinite;
+}
+
+@keyframes driftSky {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 60%; }
+  100% { background-position: 0% 0%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky { animation: none; }
+}
+
+.layout {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-rain);
+}
+
+h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 2.1rem;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.city-row {
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+}
+
+input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--cloud);
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  backdrop-filter: blur(6px);
+}
+
+input::placeholder {
+  color: var(--cloud-dim);
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent-rain);
+  outline-offset: 2px;
+}
+
+button {
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent-rain);
+  color: var(--sky-deep);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+button:hover {
+  background: #79c3e6;
+  transform: translateY(-1px);
+}
+
+/* ---- Two-panel layout ---- */
+.panels {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weather-card,
+.chart-card,
+.chat-box {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+  animation: fadeUp 0.4s ease both;
+}
+
+.weather-card { padding: 22px; }
+.chart-card { padding: 18px 18px 8px; }
+
+.weather-card.hidden {
+  display: none;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.weather-main {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.temp {
+  font-family: 'Fraunces', serif;
+  font-size: 3.4rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.temp-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.desc {
+  text-transform: capitalize;
+  font-size: 1rem;
+}
+
+.city-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--cloud-dim);
+}
+
+.details {
+  display: flex;
+  gap: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detail-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cloud-dim);
+}
+
+.detail-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+}
+
+.rain-label {
+  font-size: 0.75rem;
+  color: var(--cloud-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.chart-wrap {
+  background: rgba(11, 29, 58, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px 4px;
+}
+
+/* ---- Chat panel ---- */
+.chat-box {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 640px;
+}
+
+.chat-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.chat-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+}
+
+.chat-hint {
+  font-size: 0.75rem;
+  color: var(--cloud-dim);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-right: 4px;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: var(--panel-border);
+  border-radius: 4px;
+}
+
+.msg {
+  padding: 10px 14px;
+  border-radius: 14px;
+  max-width: 90%;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  animation: fadeUp 0.25s ease both;
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: var(--accent-rain);
+  color: var(--sky-deep);
+  border-bottom-right-radius: 4px;
+}
+
+.msg.ai {
+  align-self: flex-start;
+  background: rgba(234, 241, 251, 0.1);
+  color: var(--cloud);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input-row button {
+  padding: 12px 16px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 420px) {
+  .temp { font-size: 2.6rem; }
+  .details { flex-wrap: wrap; row-gap: 10px; }
+  .chat-box { height: 480px; }
+}
