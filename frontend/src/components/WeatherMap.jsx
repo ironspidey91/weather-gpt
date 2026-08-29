@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Layers, Maximize2, Minimize2, Thermometer, Wind, Cloud, Satellite } from 'lucide-react';
+import { Layers, Maximize2, Minimize2, Thermometer, Wind, Satellite } from 'lucide-react';
 import { motion } from 'framer-motion';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 // Fix default marker icon issue with bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -12,15 +13,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// ── Map layer configurations (all free, no API key needed) ──
+// ── Map layer configurations (all 100% free, no API key needed) ──
 const MAP_LAYERS = {
   standard: {
     label: 'Standard',
     icon: Layers,
     base: {
       dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       },
       light: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -34,38 +35,30 @@ const MAP_LAYERS = {
     icon: Thermometer,
     base: {
       dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; Stadia &copy; OSM',
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       },
       light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OSM',
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       },
     },
-    overlay: {
-      url: 'https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=b1b15e88fa797225412429c1c50c122a1',
-      attribution: '&copy; OpenWeatherMap',
-      opacity: 0.6,
-    },
+    overlay: null,
   },
   wind: {
     label: 'Wind',
     icon: Wind,
     base: {
       dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; Stadia &copy; OSM',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       },
       light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OSM',
+        url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       },
     },
-    overlay: {
-      url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=b1b15e88fa797225412429c1c50c122a1',
-      attribution: '&copy; OpenWeatherMap',
-      opacity: 0.5,
-    },
+    overlay: null,
   },
   satellite: {
     label: 'Satellite',
@@ -73,11 +66,11 @@ const MAP_LAYERS = {
     base: {
       dark: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: '&copy; Esri &mdash; Esri, DigitalGlobe, GeoEye, Earthstar, CNES/Airbus DS, USDA, AeroGRID, IGN',
+        attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
       },
       light: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: '&copy; Esri &mdash; Esri, DigitalGlobe, GeoEye, Earthstar',
+        attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
       },
     },
     overlay: null,
@@ -91,6 +84,7 @@ function MapUpdater({ center, zoom }) {
   useEffect(() => {
     map.setView(center, zoom, { animate: true, duration: 0.8 });
     setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 500);
   }, [center, zoom, map]);
 
   return null;
@@ -99,7 +93,7 @@ function MapUpdater({ center, zoom }) {
 export default function WeatherMap({ weatherData, theme }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeLayer, setActiveLayer] = useState('standard');
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const containerRef = useRef(null);
 
   const { city, coords, temperature, condition, humidity, windSpeed, windCompass } = weatherData;
@@ -194,7 +188,6 @@ export default function WeatherMap({ weatherData, theme }) {
       <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%' }}>
         {isVisible ? (
           <MapContainer
-            key={activeLayer + themeKey}
             center={center}
             zoom={10}
             scrollWheelZoom={true}
@@ -205,10 +198,11 @@ export default function WeatherMap({ weatherData, theme }) {
           >
             <MapUpdater center={center} zoom={10} />
             {/* Base layer */}
-            <TileLayer url={baseLayer.url} attribution={baseLayer.attribution} />
+            <TileLayer key={baseLayer.url} url={baseLayer.url} attribution={baseLayer.attribution} />
             {/* Overlay layer (thermal, wind, etc.) */}
             {layer.overlay && (
               <TileLayer
+                key={layer.overlay.url}
                 url={layer.overlay.url}
                 attribution={layer.overlay.attribution}
                 opacity={layer.overlay.opacity || 0.5}
