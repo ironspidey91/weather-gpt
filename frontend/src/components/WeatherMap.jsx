@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Layers, Maximize2, Minimize2, Thermometer, Wind, Satellite } from 'lucide-react';
+import { Layers, Maximize2, Minimize2, CloudRain, Gauge, Satellite } from 'lucide-react';
 import { motion } from 'framer-motion';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -21,44 +21,48 @@ const MAP_LAYERS = {
     base: {
       dark: {
         url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; OpenStreetMap',
       },
       light: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       },
     },
     overlay: null,
   },
-  temperature: {
-    label: 'Thermal',
-    icon: Thermometer,
+  radar: {
+    label: 'Rain Radar',
+    icon: CloudRain,
     base: {
       dark: {
         url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: '&copy; Stadia Maps &copy; OpenStreetMap',
       },
       light: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; OpenStreetMap',
       },
     },
-    overlay: null,
+    overlay: 'rainviewer', // special: handled dynamically
   },
-  wind: {
-    label: 'Wind',
-    icon: Wind,
+  pressure: {
+    label: 'Pressure',
+    icon: Gauge,
     base: {
       dark: {
         url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: '&copy; Stadia Maps &copy; OpenStreetMap',
       },
       light: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OpenStreetMap',
       },
     },
-    overlay: null,
+    overlay: {
+      url: 'https://tile.openweathermap.org/map/pressure_new/{z}/{x}/{y}.png?appid=439d4b804bc8187953eb36d2a8c26a02',
+      attribution: '&copy; OpenWeatherMap',
+      opacity: 0.65,
+    },
   },
   satellite: {
     label: 'Satellite',
@@ -66,11 +70,11 @@ const MAP_LAYERS = {
     base: {
       dark: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        attribution: '&copy; Esri — Source: Esri, USDA, USGS, GeoEye, and the GIS User Community',
       },
       light: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        attribution: '&copy; Esri — Source: Esri, USDA, USGS, GeoEye, and the GIS User Community',
       },
     },
     overlay: null,
@@ -94,6 +98,7 @@ export default function WeatherMap({ weatherData, theme }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeLayer, setActiveLayer] = useState('standard');
   const [isVisible, setIsVisible] = useState(true);
+  const [radarUrl, setRadarUrl] = useState('');
   const containerRef = useRef(null);
 
   const { city, coords, temperature, condition, humidity, windSpeed, windCompass } = weatherData;
@@ -101,6 +106,22 @@ export default function WeatherMap({ weatherData, theme }) {
   const themeKey = theme === 'light' ? 'light' : 'dark';
   const layer = MAP_LAYERS[activeLayer];
   const baseLayer = layer.base[themeKey];
+
+  // Fetch latest RainViewer radar timestamp (free, no API key)
+  useEffect(() => {
+    fetch('https://api.rainviewer.com/public/weather-maps.json')
+      .then(r => r.json())
+      .then(data => {
+        const latest = data.radar?.past?.slice(-1)[0];
+        if (latest) {
+          setRadarUrl(`https://tilecache.rainviewer.com/v2/radar/${latest.path}/256/{z}/{x}/{y}/6/1_1.png`);
+        }
+      })
+      .catch(() => {
+        // Fallback: use nowcast path format
+        setRadarUrl('https://tilecache.rainviewer.com/v2/radar/nowcast_/256/{z}/{x}/{y}/6/1_1.png');
+      });
+  }, []);
 
   // Lazy mount: only render the MapContainer when scrolled into view
   useEffect(() => {
@@ -199,8 +220,16 @@ export default function WeatherMap({ weatherData, theme }) {
             <MapUpdater center={center} zoom={10} />
             {/* Base layer */}
             <TileLayer key={baseLayer.url} url={baseLayer.url} attribution={baseLayer.attribution} />
-            {/* Overlay layer (thermal, wind, etc.) */}
-            {layer.overlay && (
+            {/* Overlay layer */}
+            {layer.overlay === 'rainviewer' && radarUrl && (
+              <TileLayer
+                key={radarUrl}
+                url={radarUrl}
+                attribution="&copy; RainViewer"
+                opacity={0.7}
+              />
+            )}
+            {layer.overlay && layer.overlay !== 'rainviewer' && (
               <TileLayer
                 key={layer.overlay.url}
                 url={layer.overlay.url}

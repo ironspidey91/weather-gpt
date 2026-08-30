@@ -5,40 +5,23 @@
 
 const GROQ_API_KEY = import.meta.env?.VITE_GROQ_API_KEY || '';
 
-const SYSTEM_PROMPT = `You are WeatherGPT, an advanced conversational AI assistant specialized EXCLUSIVELY in weather forecasting, severe weather alerts, climate intelligence, and agricultural advisories. You are built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon problem SIH26068.
+const SYSTEM_PROMPT = `You are WeatherGPT — a friendly, knowledgeable AI weather assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
 
-STRICT RULE — You must ONLY respond to topics related to:
-- Weather (current, forecasts, historical)
-- Climate and atmospheric science
-- Severe weather alerts (cyclones, floods, heatwaves, thunderstorms)
-- Air Quality Index (AQI) and pollution
-- Agricultural/Agromet advisories affected by weather
-- Clothing and lifestyle recommendations BASED ON weather
-- Travel planning RELATED TO weather conditions
-- Natural disasters and emergency preparedness
+Personality: You are warm, conversational, and approachable. Talk like a helpful meteorologist friend — not a rigid robot. Use natural language, vary your tone, and show personality. It's okay to be casual.
 
-If a user asks about ANYTHING outside these topics — such as politics, entertainment, sports scores, coding, math, relationships, jokes, general knowledge, history (non-climate), celebrities, or ANY other non-weather subject — you MUST politely decline and redirect them. Respond with something like:
-"I'm WeatherGPT, and I'm designed exclusively for weather, climate, and atmospheric intelligence. I can't help with that topic, but I'd love to help you with weather forecasts, air quality, severe alerts, farming advisories, or climate trends! What would you like to know about the weather?"
+Core expertise: Weather, climate, atmospheric science, AQI, agricultural advisories, severe alerts, travel weather, and lifestyle tips based on weather.
 
-NEVER answer non-weather questions, even if the user insists. Stay strictly within your weather domain.
-
-Your capabilities:
-- Real-time weather analysis and forecasting
-- Severe weather alerts (cyclones, floods, heatwaves, thunderstorms)
-- Air Quality Index (AQI) interpretation and health advisories
-- Agricultural/Agromet advisories for farmers (crop-specific guidance)
-- Climate trend analysis and historical comparisons
-- Clothing and lifestyle recommendations based on weather
-- Travel weather planning
-
-Guidelines:
-- Always be specific with numbers, data, and locations
-- Use markdown formatting: **bold** for emphasis, bullet points for lists
-- Provide actionable safety instructions for severe weather
-- Reference MoES, IMD, and INSAT-3DR satellite data when relevant
-- Keep responses concise but informative (150-250 words ideal)
-- For farmers, provide crop-specific guidance based on current conditions
-- Include relevant badges/labels in your response structure`;
+Conversation guidelines:
+- Respond naturally to greetings, small talk, and follow-ups — be human
+- If someone asks something unrelated to weather, briefly acknowledge it, then gently steer back: "Ha, I wish I knew! But weather is my thing — want to know if you need an umbrella today?"
+- Use real data from the context provided. Be specific with numbers
+- Use markdown: **bold** for key data, bullet points for lists
+- Keep responses concise (100-200 words) unless detail is needed
+- Vary your response style — don't always use the same format
+- For severe weather, be direct and include safety steps
+- Reference IMD/MoES/INSAT-3DR when relevant
+- For farmers, give crop-specific guidance based on conditions
+- End with 2-3 badge labels on the last line: BADGES: [badge1, badge2]`;
 
 // Try Groq API first, fallback to local engine
 export async function processWeatherGPTQuery(query, weatherContext) {
@@ -242,32 +225,76 @@ function localWeatherEngine(query, ctx) {
     };
   }
 
-  // 10. Generic / Greeting / Summary
-  if (q.match(/^(hi|hello|hey|namaste|good|what|how|tell|brief|summary|overview|current|now|status)/)) {
+  // 10. Greetings — warm and human
+  if (q.match(/^(hi|hello|hey|namaste|good morning|good evening|good afternoon|sup|yo)/)) {
+    const greetings = [
+      `Hey there! 👋 It's **${temp}°C** and **${condition.toLowerCase()}** in ${city} right now. What can I help you with — rain check, air quality, or maybe what to wear today?`,
+      `Hi! Welcome to WeatherGPT 🌤️ Right now in **${city}** it's **${temp}°C**, feels like **${feelsLike}°C**. ${daily[0]?.pop > 40 ? "Heads up — there's a decent chance of rain today!" : "Looking pretty clear out there."} What's on your mind?`,
+      `Namaste! 🙏 Currently **${condition.toLowerCase()}** at **${temp}°C** in ${city}. Humidity's at ${hum}% and wind is ${wind} km/h. Ask me anything — forecasts, alerts, air quality, you name it!`,
+    ];
     return {
-      text: `**Current Weather in ${city}, ${state}**\n\nConditions are **${condition}** with a temperature of **${temp}°C** (feels like **${feelsLike}°C**).\n\n- **Humidity:** ${hum}%\n- **Wind:** ${wind} km/h ${windCompass}\n- **Pressure:** ${pressure} hPa\n- **UV Index:** ${uvIndex}/11\n- **AQI:** ${aqi.value} (${aqi.status})\n- **Sunrise:** ${sunrise} | **Sunset:** ${sunset}\n\n**Today's Forecast:** High ${daily[0]?.maxTemp}°C, Low ${daily[0]?.minTemp}°C, ${daily[0]?.pop}% rain chance.\n\nAsk me about rain forecasts, air quality, farming advisories, climate trends, or travel weather!`,
+      text: greetings[Math.floor(Math.random() * greetings.length)],
       type: 'general',
-      badges: ['Live Forecast', `${temp}°C`, condition]
+      badges: [`${temp}°C`, condition, 'Live']
     };
   }
 
-  // Only reject clearly off-topic queries (long enough to be sure, with zero weather keywords)
-  const weatherKeywords = /weather|rain|sun|wind|cloud|storm|flood|cyclone|temperature|temp|humid|forecast|aqi|pollution|air|uv|heat|cold|warm|cool|snow|fog|mist|haze|thunder|lightning|monsoon|climate|farm|crop|agri|soil|irrig|harvest|travel|commut|drive|wear|cloth|jacket|alert|warn|disaster|emergen|pressure|satellite|imd|insat|barometer|dew|frost|hail|drought|tornado|typhoon|sunrise|sunset|season|umbrella|today|tomorrow|outside|safe|go|carry|need|should|can|hot|muggy|humid|dry/;
+  // 11. Current weather / summary / what's the weather
+  if (q.match(/what|how|tell|brief|summary|overview|current|now|status|update|weather like|whats/)) {
+    const commentary = temp > 35 ? "It's scorching out there — stay hydrated! 🥵" : temp > 28 ? "Warm but manageable." : temp < 15 ? "Bundle up, it's chilly! 🧣" : "Pretty comfortable weather right now 👌";
+    return {
+      text: `Here's what's happening in **${city}** right now:\n\n${commentary}\n\n- 🌡️ **${temp}°C** (feels like ${feelsLike}°C) — ${condition}\n- 💧 Humidity: **${hum}%** | Wind: **${wind} km/h** ${windCompass}\n- 🫁 AQI: **${aqi.value}** (${aqi.status})\n- ☀️ UV: **${uvIndex}/11** | Sunrise ${sunrise}, Sunset ${sunset}\n\n**Today:** High ${daily[0]?.maxTemp}°, Low ${daily[0]?.minTemp}°, ${daily[0]?.pop}% rain chance.`,
+      type: 'general',
+      badges: ['Live Data', `${temp}°C`, condition]
+    };
+  }
+
+  // 12. Thank you / appreciation
+  if (q.match(/thank|thanks|thx|appreciate|helpful|great|awesome|nice|cool|perfect/)) {
+    const replies = [
+      `You're welcome! 😊 I'm here whenever you need a weather update for **${city}**. Stay safe out there!`,
+      `Glad I could help! Feel free to ask me anything about the weather, air quality, or forecasts anytime 🌤️`,
+      `Anytime! That's what I'm here for. Just ping me if the weather changes or you need advice. Currently **${temp}°C** and **${condition.toLowerCase()}** in ${city}.`,
+    ];
+    return {
+      text: replies[Math.floor(Math.random() * replies.length)],
+      type: 'general',
+      badges: ['Happy to Help', city]
+    };
+  }
+
+  // 13. Who are you / about
+  if (q.match(/who are you|what are you|about|your name|introduce/)) {
+    return {
+      text: `I'm **WeatherGPT** — your AI-powered weather intelligence assistant! 🤖🌦️\n\nBuilt for India's **Ministry of Earth Sciences** under the Smart India Hackathon (SIH26068), I specialize in:\n\n- Real-time weather analysis & forecasts\n- Severe weather alerts & safety guidance\n- Air quality monitoring & health advisories\n- Agricultural advisories for farmers\n- Climate trends & historical data\n\nI use data from **IMD, INSAT-3DR satellites**, and the Open-Meteo API. Currently tracking weather for **${city}** — ask me anything!`,
+      type: 'general',
+      badges: ['WeatherGPT', 'SIH26068', 'MoES']
+    };
+  }
+
+  // Soft redirect for off-topic (friendly, not robotic)
   const offTopicKeywords = /movie|cricket|football|politics|president|prime minister|song|music|code|program|math|calcul|recipe|cook|game|stock|share|bitcoin|crypto|boyfriend|girlfriend|relationship|exam|college|admission/;
-  const wordCount = q.split(/\s+/).length;
-
-  // Only reject if it's clearly off-topic (has off-topic keywords OR is long enough with no weather relevance)
-  if (offTopicKeywords.test(q) || (wordCount >= 5 && !weatherKeywords.test(q))) {
+  if (offTopicKeywords.test(q)) {
+    const redirects = [
+      `Ha, that's a bit outside my wheelhouse! 😄 I'm all about weather and climate. But hey — did you know it's **${temp}°C** in ${city} right now? Want to know if you'll need an umbrella later?`,
+      `I wish I could help with that, but weather is really my thing! 🌧️ How about I tell you about the forecast for ${city} instead? Currently **${condition.toLowerCase()}** at **${temp}°C**.`,
+      `That one's beyond me, I'm afraid! I live and breathe weather data 🌪️ Ask me about forecasts, air quality, alerts, or farming advisories — I've got you covered for **${city}**!`,
+    ];
     return {
-      text: `I'm **WeatherGPT**, and I'm designed exclusively for **weather, climate, and atmospheric intelligence**. I can't help with that topic.\n\nBut I'd love to help you with:\n- Weather forecasts & rain predictions\n- Air quality & health advisories\n- Severe weather alerts & safety\n- Farming & crop guidance\n- Climate trends & historical data\n- Travel & commute weather\n\nWhat would you like to know about the weather in **${city}**?`,
+      text: redirects[Math.floor(Math.random() * redirects.length)],
       type: 'general',
-      badges: ['Weather Only', 'Ask About Weather']
+      badges: ['Weather Expert', city]
     };
   }
 
-  // Fallback
+  // Fallback — helpful and inviting, not a dead end
+  const fallbacks = [
+    `Right now in **${city}** it's **${temp}°C** and **${condition.toLowerCase()}** — ${daily[0]?.pop > 40 ? "rain is possible later!" : "looking clear for now."}\n\nI can dive deeper into forecasts, air quality, farming advice, or travel weather. What interests you?`,
+    `Here's a quick snapshot for **${city}**: **${temp}°C**, ${condition.toLowerCase()}, humidity at **${hum}%**, wind **${wind} km/h** ${windCompass}.\n\nWant details on rain probability, UV levels, AQI, or the 5-day outlook? Just ask! 😊`,
+    `**${condition}** in ${city} at **${temp}°C** (feels like ${feelsLike}°C). AQI is ${aqi.value} (${aqi.status}).\n\nI'm great at rain forecasts, severe alerts, farming tips, and travel weather — fire away!`,
+  ];
   return {
-    text: `**WeatherGPT Analysis for ${city}**\n\nCurrently **${condition}** at **${temp}°C** (feels like ${feelsLike}°C).\n\n- **Humidity:** ${hum}% | **Wind:** ${wind} km/h ${windCompass}\n- **Pressure:** ${pressure} hPa | **UV:** ${uvIndex}\n- **AQI:** ${aqi.value} (${aqi.status})\n\nI can help with:\n- Rain forecasts & umbrella advice\n- Severe weather alerts & safety\n- Air quality & health advisories\n- Farming & crop guidance\n- Climate trends & historical data\n- Travel & commute weather\n\nJust ask!`,
+    text: fallbacks[Math.floor(Math.random() * fallbacks.length)],
     type: 'general',
     badges: ['Live Data', `${temp}°C`, condition]
   };
