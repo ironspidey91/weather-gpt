@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WeatherGPT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="sky"></div>
+
+  <div class="layout">
+
+    <header class="app-header">
+      <span class="eyebrow">Live forecast</span>
+      <h1>WeatherGPT</h1>
+      <div class="city-row">
+        <input type="text" id="cityInput" placeholder="Enter a city" value="">
+        <button id="loadWeatherBtn">Get weather</button>
+      </div>
+    </header>
+
+    <div class="panels">
+
+      <!-- LEFT: Dashboard -->
+      <section class="dashboard">
+        <div id="weatherCard" class="weather-card hidden">
+          <div class="weather-main">
+            <div class="temp" id="temp">--&deg;</div>
+            <div class="temp-meta">
+              <div class="desc" id="desc">&mdash;</div>
+              <div class="city-label" id="cityLabel">&mdash;</div>
+            </div>
+          </div>
+
+          <div class="details" id="details">
+            <div class="detail"><span class="detail-label">Feels like</span><span class="detail-value" id="feelsLike">&mdash;</span></div>
+            <div class="detail"><span class="detail-label">Humidity</span><span class="detail-value" id="humidity">&mdash;</span></div>
+            <div class="detail"><span class="detail-label">Wind</span><span class="detail-value" id="wind">&mdash;</span></div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <span class="rain-label">Rain probability &middot; next 24h</span>
+          <div class="chart-wrap">
+            <canvas id="rainChart" height="130"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <span class="rain-label">Temperature trend &middot; next 24h</span>
+          <div class="chart-wrap">
+            <canvas id="tempChart" height="130"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Chat -->
+      <section class="chat-box">
+        <div class="chat-header">
+          <span class="chat-title">Ask WeatherGPT</span>
+        </div>
+
+        <div id="chatMessages" class="chat-messages"></div>
+
+        <div class="chat-input-row">
+          <input type="text" id="questionInput" placeholder="Ask about the weather…">
+          <button id="sendBtn" aria-label="Send">&uarr;</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
