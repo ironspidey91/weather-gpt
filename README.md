@@ -91,3 +91,4 @@ WeatherGPT uses the **Open-Meteo API** (free, no API key required) for real-time
 ## License
 
 MIT
+# weathergpt
