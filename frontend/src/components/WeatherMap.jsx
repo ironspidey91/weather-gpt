@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // ── Map layer configurations (all 100% free, no API key needed) ──
-const OWM_KEY = import.meta.env?.VITE_OPENWEATHER_API_KEY || '';
+const OWM_KEY = import.meta.env?.VITE_OPENWEATHER_API_KEY || '439d4b804bc8187953eb36d2a8c26a02';
 
 const MAP_LAYERS = {
   standard: {
@@ -302,8 +302,6 @@ export default function WeatherMap({ weatherData, theme }) {
         ) : (
           <div className="skeleton" style={{ height: '100%', width: '100%', borderRadius: 0 }}></div>
         )}
-      </div>
-
       </motion.div>
     </>
   );
