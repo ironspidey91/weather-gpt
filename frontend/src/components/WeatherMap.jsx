@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Layers, Maximize2, Minimize2, CloudRain, Gauge, Satellite } from 'lucide-react';
+import { Layers, Maximize2, Minimize2, CloudRain, Gauge, Satellite, Thermometer, Wind } from 'lucide-react';
 import { motion } from 'framer-motion';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -20,12 +20,12 @@ const MAP_LAYERS = {
     icon: Layers,
     base: {
       dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; OpenStreetMap',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
       },
       light: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: '&copy; OpenStreetMap',
       },
     },
     overlay: null,
@@ -35,23 +35,61 @@ const MAP_LAYERS = {
     icon: CloudRain,
     base: {
       dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; Stadia Maps &copy; OpenStreetMap',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
       },
       light: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         attribution: '&copy; OpenStreetMap',
       },
     },
-    overlay: 'rainviewer', // special: handled dynamically
+    overlay: 'rainviewer',
+  },
+  temp: {
+    label: 'Temperature',
+    icon: Thermometer,
+    base: {
+      dark: {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      },
+      light: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OpenStreetMap',
+      },
+    },
+    overlay: {
+      url: 'https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=439d4b804bc8187953eb36d2a8c26a02',
+      attribution: '&copy; OpenWeatherMap',
+      opacity: 0.65,
+    },
+  },
+  wind: {
+    label: 'Wind',
+    icon: Wind,
+    base: {
+      dark: {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      },
+      light: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OpenStreetMap',
+      },
+    },
+    overlay: {
+      url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=439d4b804bc8187953eb36d2a8c26a02',
+      attribution: '&copy; OpenWeatherMap',
+      opacity: 0.65,
+    },
   },
   pressure: {
     label: 'Pressure',
     icon: Gauge,
     base: {
       dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; Stadia Maps &copy; OpenStreetMap',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
       },
       light: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -150,14 +188,24 @@ export default function WeatherMap({ weatherData, theme }) {
   }, []);
 
   return (
-    <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className={`glass-card relative ${isExpanded ? 'fixed inset-4 z-50' : ''}`}
-      style={{ border: '1px solid var(--border-glass)', flexShrink: 0, minHeight: isExpanded ? undefined : '380px', overflow: 'hidden' }}
-    >
+    <>
+      {isExpanded && (
+        <div className="fixed inset-0 z-[9990] bg-black/80 backdrop-blur-sm" onClick={() => setIsExpanded(false)}></div>
+      )}
+      <motion.div
+        ref={containerRef}
+        initial={!isExpanded ? { opacity: 0, y: 12 } : false}
+        animate={!isExpanded ? { opacity: 1, y: 0 } : false}
+        transition={{ duration: 0.4 }}
+        className={`glass-card relative ${isExpanded ? 'fixed inset-4 z-[9999]' : ''}`}
+        style={{ 
+          border: '1px solid var(--border-glass)', 
+          flexShrink: 0, 
+          minHeight: isExpanded ? undefined : '380px', 
+          overflow: 'hidden',
+          transform: isExpanded ? 'none' : undefined 
+        }}
+      >
       {/* Header */}
       <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-glass)' }}>
         <div className="flex items-center gap-2">
@@ -254,10 +302,8 @@ export default function WeatherMap({ weatherData, theme }) {
         )}
       </div>
 
-      {/* Overlay when expanded */}
-      {isExpanded && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setIsExpanded(false)}></div>
-      )}
+      </div>
     </motion.div>
+    </>
   );
 }

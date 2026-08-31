@@ -178,7 +178,7 @@ export default function AlertsBanner({ weatherData, externalOpen, onExternalClos
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="glass-card max-w-2xl w-full p-5 relative max-h-[85vh] overflow-y-auto"
+              className="glass-card w-full h-full min-h-screen rounded-none p-5 relative overflow-y-auto"
               style={{ border: `1px solid ${sev.border}` }}
               onClick={e => e.stopPropagation()}
             >

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { processWeatherGPTQuery, speakText, stopSpeech } from '../services/aiService';
+import { CITY_LIST, fetchWeatherData } from '../services/weatherService';
+import { toast } from 'react-hot-toast';
 
 const SUGGESTION_PILLS = [
   { label: "Will it rain today?",              icon: CloudRain,   accent: '#06b6d4' },
@@ -25,7 +27,7 @@ const TYPE_BADGE_MAP = {
   general:   'badge-cyan',
 };
 
-export default function ChatInterface({ weatherData, speechEnabled }) {
+export default function ChatInterface({ weatherData, speechEnabled, onCityChangeRequest }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,7 +74,26 @@ export default function ChatInterface({ weatherData, speechEnabled }) {
     try {
       // Simulate processing delay for UX
       await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
-      const response = await processWeatherGPTQuery(text, weatherData);
+      
+      const lowerText = text.toLowerCase();
+      let targetCity = weatherData.city;
+      let contextData = weatherData;
+      let cityChanged = false;
+
+      for (const city of CITY_LIST) {
+        if (lowerText.includes(city.toLowerCase()) && city !== weatherData.city) {
+          targetCity = city;
+          cityChanged = true;
+          break;
+        }
+      }
+
+      if (cityChanged) {
+        if (onCityChangeRequest) onCityChangeRequest(targetCity);
+        contextData = await fetchWeatherData(targetCity);
+      }
+
+      const response = await processWeatherGPTQuery(text, contextData);
 
       const aiMsg = {
         id: Date.now() + 1,
@@ -102,6 +123,7 @@ export default function ChatInterface({ weatherData, speechEnabled }) {
   // Web Speech API - Voice Input
   const toggleVoiceInput = () => {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      toast.error('Voice input is not supported in this browser.');
       return;
     }
 

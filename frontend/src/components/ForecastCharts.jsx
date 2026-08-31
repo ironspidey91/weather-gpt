@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from 'recharts';
 import { Clock, CloudRain, Thermometer, Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -67,7 +67,25 @@ function DailyForecastCard({ day, index }) {
 
 export default function ForecastCharts({ weatherData }) {
   const [tab, setTab] = useState('hourly');
+  const scrollRef = useRef(null);
   const { hourly, daily } = weatherData;
+
+  useEffect(() => {
+    if (tab === 'hourly' && scrollRef.current) {
+      const currentHour = new Date().getHours();
+      const filteredIndex = hourly.filter((_, i) => i % 2 === 0).findIndex(h => parseInt(h.time) >= currentHour);
+      if (filteredIndex > 0) {
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTo({
+              left: (filteredIndex * 72) - (scrollRef.current.clientWidth / 2) + 36,
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
+      }
+    }
+  }, [tab, hourly]);
 
   return (
     <motion.div
@@ -128,7 +146,7 @@ export default function ForecastCharts({ weatherData }) {
           </div>
 
           {/* Hourly scroll strip */}
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          <div ref={scrollRef} className="flex gap-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
             {hourly.filter((_, i) => i % 2 === 0).map((h, idx) => (
               <div key={idx} className="shrink-0 w-16 p-2 rounded-xl text-center space-y-0.5 glass-panel" style={{ border: '1px solid var(--border-glass)' }}>
                 <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{h.time}</p>

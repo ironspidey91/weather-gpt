@@ -21,6 +21,7 @@ export default function App() {
   const [locating, setLocating] = useState(false);
   const [mobileTab, setMobileTab] = useState('chat');
   const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [hasViewedAlerts, setHasViewedAlerts] = useState(false);
 
   // Apply theme
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function App() {
 
   useEffect(() => {
     loadCityData(currentCity);
+    setHasViewedAlerts(false); // Reset alerts viewed state on new city
   }, [currentCity, loadCityData]);
 
   // Geolocation handler
@@ -98,12 +100,12 @@ export default function App() {
         onSelectCity={setCurrentCity}
         speechEnabled={speechEnabled}
         setSpeechEnabled={setSpeechEnabled}
-        activeAlertCount={weatherData ? (weatherData.daily[0]?.pop > 60 || weatherData.aqi?.value > 150 ? 2 : 1) : 0}
+        activeAlertCount={weatherData && !hasViewedAlerts ? (weatherData.daily[0]?.pop > 60 || weatherData.aqi?.value > 150 ? 2 : 1) : 0}
         theme={theme}
         setTheme={setTheme}
         onLocate={handleLocate}
         locating={locating}
-        onAlertClick={() => setAlertModalOpen(true)}
+        onAlertClick={() => { setAlertModalOpen(true); setHasViewedAlerts(true); }}
       />
 
       {/* Main Content */}
@@ -150,7 +152,7 @@ export default function App() {
           <div className="desktop-layout hide-mobile">
             {/* Left pane: Chat (fixed to viewport) */}
             <aside className="chat-pane">
-              <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} />
+              <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} onCityChangeRequest={setCurrentCity} />
             </aside>
 
             {/* Right pane: Scrollable dashboard */}
@@ -183,7 +185,7 @@ export default function App() {
             <AnimatePresence mode="wait">
               {mobileTab === 'chat' && (
                 <motion.div key="chat" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
-                  <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} />
+                  <ChatInterface weatherData={weatherData} speechEnabled={speechEnabled} onCityChangeRequest={setCurrentCity} />
                 </motion.div>
               )}
               {mobileTab === 'dashboard' && (
