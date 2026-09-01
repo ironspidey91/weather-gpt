@@ -5,22 +5,23 @@
 
 const GROQ_API_KEY = import.meta.env?.VITE_GROQ_API_KEY || '';
 
-const SYSTEM_PROMPT = `You are WeatherGPT — a friendly, knowledgeable AI weather assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
+const SYSTEM_PROMPT = `You are WeatherGPT — a friendly, knowledgeable AI assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
 
-Personality: You are warm, conversational, and approachable. Talk like a helpful meteorologist friend — not a rigid robot. Use natural language, vary your tone, and show personality. It's okay to be casual.
+Personality: You are warm, conversational, witty, and approachable. Talk like a smart, helpful friend — not a rigid robot. Use natural language, vary your tone, and show personality. Be casual and fun.
 
-Core expertise: Weather, climate, atmospheric science, AQI, agricultural advisories, severe alerts, travel weather, and lifestyle tips based on weather.
+Core expertise: Weather, climate, atmospheric science, AQI, agricultural advisories, severe alerts, travel weather, lifestyle tips, and general knowledge.
 
 Conversation guidelines:
-- Respond naturally to greetings, small talk, and follow-ups — be human
-- If someone asks something unrelated to weather, briefly acknowledge it, then gently steer back: "Ha, I wish I knew! But weather is my thing — want to know if you need an umbrella today?"
-- Use real data from the context provided. Be specific with numbers
+- You can answer ANY question — weather or not. You're a smart AI, not just a weather bot.
+- For non-weather topics, answer helpfully and naturally. If it fits, casually tie in the current weather context (e.g. "Great question! Also, it's ${'{temperature}'}°C outside, perfect for...")
+- For weather topics, use real data from the context provided. Be specific with numbers.
 - Use markdown: **bold** for key data, bullet points for lists
-- Keep responses concise (100-200 words) unless detail is needed
+- Keep responses concise (100-250 words) unless detail is needed
 - Vary your response style — don't always use the same format
 - For severe weather, be direct and include safety steps
-- Reference IMD/MoES/INSAT-3DR when relevant
+- Reference IMD/MoES/INSAT-3DR when relevant for weather queries
 - For farmers, give crop-specific guidance based on conditions
+- Be engaging, funny when appropriate, and never refuse to answer
 - End with 2-3 badge labels on the last line: BADGES: [badge1, badge2]`;
 
 // Try Groq API first, fallback to local engine
@@ -272,20 +273,8 @@ function localWeatherEngine(query, ctx) {
     };
   }
 
-  // Soft redirect for off-topic (friendly, not robotic)
-  const offTopicKeywords = /movie|cricket|football|politics|president|prime minister|song|music|code|program|math|calcul|recipe|cook|game|stock|share|bitcoin|crypto|boyfriend|girlfriend|relationship|exam|college|admission/;
-  if (offTopicKeywords.test(q)) {
-    const redirects = [
-      `Ha, that's a bit outside my wheelhouse! 😄 I'm all about weather and climate. But hey — did you know it's **${temp}°C** in ${city} right now? Want to know if you'll need an umbrella later?`,
-      `I wish I could help with that, but weather is really my thing! 🌧️ How about I tell you about the forecast for ${city} instead? Currently **${condition.toLowerCase()}** at **${temp}°C**.`,
-      `That one's beyond me, I'm afraid! I live and breathe weather data 🌪️ Ask me about forecasts, air quality, alerts, or farming advisories — I've got you covered for **${city}**!`,
-    ];
-    return {
-      text: redirects[Math.floor(Math.random() * redirects.length)],
-      type: 'general',
-      badges: ['Weather Expert', city]
-    };
-  }
+  // For off-topic queries in local engine, give a friendly general response with weather context
+  // (No blocking — the local engine just provides weather info as a helpful fallback)
 
   // Fallback — helpful and inviting, not a dead end
   const fallbacks = [
