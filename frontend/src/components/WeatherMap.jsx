@@ -302,6 +302,7 @@ export default function WeatherMap({ weatherData, theme }) {
         ) : (
           <div className="skeleton" style={{ height: '100%', width: '100%', borderRadius: 0 }}></div>
         )}
+      </div>
       </motion.div>
     </>
   );
