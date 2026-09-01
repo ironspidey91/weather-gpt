@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Layers, Maximize2, Minimize2, CloudRain, Gauge, Satellite, Thermometer, Wind } from 'lucide-react';
+import { Layers, Maximize2, Minimize2, CloudRain, Satellite, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -14,8 +14,6 @@ L.Icon.Default.mergeOptions({
 });
 
 // ── Map layer configurations (all 100% free, no API key needed) ──
-const OWM_KEY = import.meta.env?.VITE_OPENWEATHER_API_KEY || '439d4b804bc8187953eb36d2a8c26a02';
-
 const MAP_LAYERS = {
   standard: {
     label: 'Standard',
@@ -46,63 +44,6 @@ const MAP_LAYERS = {
       },
     },
     overlay: 'rainviewer',
-  },
-  temp: {
-    label: 'Temperature',
-    icon: Thermometer,
-    base: {
-      dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-      },
-      light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap',
-      },
-    },
-    overlay: {
-      url: `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
-      attribution: '&copy; OpenWeatherMap',
-      opacity: 0.65,
-    },
-  },
-  wind: {
-    label: 'Wind',
-    icon: Wind,
-    base: {
-      dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-      },
-      light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap',
-      },
-    },
-    overlay: {
-      url: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
-      attribution: '&copy; OpenWeatherMap',
-      opacity: 0.65,
-    },
-  },
-  pressure: {
-    label: 'Pressure',
-    icon: Gauge,
-    base: {
-      dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-      },
-      light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap',
-      },
-    },
-    overlay: {
-      url: `https://tile.openweathermap.org/map/pressure_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
-      attribution: '&copy; OpenWeatherMap',
-      opacity: 0.65,
-    },
   },
   satellite: {
     label: 'Satellite',
@@ -152,14 +93,15 @@ export default function WeatherMap({ weatherData, theme }) {
     fetch('https://api.rainviewer.com/public/weather-maps.json')
       .then(r => r.json())
       .then(data => {
+        const host = data.host || 'https://tilecache.rainviewer.com';
         const latest = data.radar?.past?.slice(-1)[0];
         if (latest) {
-          setRadarUrl(`https://tilecache.rainviewer.com/v2/radar/${latest.path}/256/{z}/{x}/{y}/6/1_1.png`);
+          // path already contains /v2/radar/hash — use host + path directly
+          setRadarUrl(`${host}${latest.path}/256/{z}/{x}/{y}/7/1_0.png`);
         }
       })
       .catch(() => {
-        // Fallback: use nowcast path format
-        setRadarUrl('https://tilecache.rainviewer.com/v2/radar/nowcast_/256/{z}/{x}/{y}/6/1_1.png');
+        setRadarUrl('');
       });
   }, []);
 
@@ -256,7 +198,7 @@ export default function WeatherMap({ weatherData, theme }) {
       </div>
 
       {/* Map container */}
-      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%' }}>
+      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%', position: 'relative' }}>
         {isVisible ? (
           <MapContainer
             center={center}
@@ -270,21 +212,13 @@ export default function WeatherMap({ weatherData, theme }) {
             <MapUpdater center={center} zoom={10} />
             {/* Base layer */}
             <TileLayer key={baseLayer.url} url={baseLayer.url} attribution={baseLayer.attribution} />
-            {/* Overlay layer */}
+            {/* Rain Radar overlay */}
             {layer.overlay === 'rainviewer' && radarUrl && (
               <TileLayer
                 key={radarUrl}
                 url={radarUrl}
                 attribution="&copy; RainViewer"
                 opacity={0.7}
-              />
-            )}
-            {layer.overlay && layer.overlay !== 'rainviewer' && (
-              <TileLayer
-                key={layer.overlay.url}
-                url={layer.overlay.url}
-                attribution={layer.overlay.attribution}
-                opacity={layer.overlay.opacity || 0.5}
               />
             )}
             <Marker position={center}>
@@ -302,8 +236,35 @@ export default function WeatherMap({ weatherData, theme }) {
         ) : (
           <div className="skeleton" style={{ height: '100%', width: '100%', borderRadius: 0 }}></div>
         )}
+
+        {/* Radar info banner */}
+        {activeLayer === 'radar' && (
+          <div style={{
+            position: 'absolute',
+            bottom: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            background: 'var(--bg-glass)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.35rem 0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            fontSize: '0.7rem',
+            color: 'var(--text-secondary)',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}>
+            <Info className="w-3 h-3" style={{ color: 'var(--accent-cyan)', flexShrink: 0 }} />
+            Blue patches = active precipitation • No patches = clear skies
+          </div>
+        )}
       </div>
       </motion.div>
     </>
   );
 }
+
