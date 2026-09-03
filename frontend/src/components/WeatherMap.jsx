@@ -16,35 +16,28 @@ L.Icon.Default.mergeOptions({
 // ── OpenWeatherMap Tile Key (verified active) ──
 const OWM_KEY = import.meta.env?.VITE_OPENWEATHER_API_KEY || '6d73990b726322ab736ac9ee84cdaef6';
 
+// Dark base: Esri World Dark Gray Canvas (100% free, no API key)
+const DARK_BASE = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  attribution: '&copy; Esri, HERE, DeLorme, MapmyIndia, &copy; OpenStreetMap',
+};
+// Light base: OpenStreetMap (100% free, no API key)
+const LIGHT_BASE = {
+  url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '&copy; OpenStreetMap contributors',
+};
+
 const MAP_LAYERS = {
   standard: {
     label: 'Standard',
     icon: Layers,
-    base: {
-      dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-      },
-      light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap',
-      },
-    },
+    base: { dark: DARK_BASE, light: LIGHT_BASE },
     overlay: null,
   },
   radar: {
     label: 'Rain Radar',
     icon: CloudRain,
-    base: {
-      dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-      },
-      light: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; OpenStreetMap',
-      },
-    },
+    base: { dark: DARK_BASE, light: LIGHT_BASE },
     overlay: 'rainviewer',
   },
   satellite: {
@@ -53,11 +46,11 @@ const MAP_LAYERS = {
     base: {
       dark: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: '&copy; Esri — Source: Esri, USDA, USGS, GeoEye, and the GIS User Community',
+        attribution: '&copy; Esri — Esri, USDA, USGS, GeoEye, and the GIS User Community',
       },
       light: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: '&copy; Esri — Source: Esri, USDA, USGS, GeoEye, and the GIS User Community',
+        attribution: '&copy; Esri — Esri, USDA, USGS, GeoEye, and the GIS User Community',
       },
     },
     overlay: null,
