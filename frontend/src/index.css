@@ -165,9 +165,25 @@
   .glass-card:hover {
     border-color: var(--border-glass-bright);
   }
+  .glass-card-interactive {
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-card-interactive::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    pointer-events: none;
+  }
   .glass-card-interactive:hover {
     border-color: var(--border-glass-bright);
     box-shadow: var(--shadow-md);
+  }
+  .glass-card-interactive:hover::after {
+    opacity: 1;
   }
 
   .glass-panel {
@@ -182,6 +198,24 @@
   }
   .text-gradient-warm {
     color: var(--accent-orange);
+  }
+  .text-gradient-cold {
+    background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-hot {
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-mild {
+    background: linear-gradient(135deg, #10b981 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   /* ── Buttons ── */
@@ -351,6 +385,16 @@
     flex-direction: column;
     min-height: 0;
     border-right: 1px solid var(--border-glass);
+    position: relative;
+  }
+  .chat-pane::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(148,163,184,0.03) 1px, transparent 0);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: 0;
   }
 
   /* Right pane — Dashboard */
@@ -456,6 +500,71 @@
   .animate-scale-in    { animation: scaleIn 0.3s ease-out; }
   .animate-pulse-glow  { animation: pulseGlow 3s infinite ease-in-out; }
   .animate-float       { animation: floatY 3s ease-in-out infinite; }
+  .animate-breathe     { animation: breathe 3s ease-in-out infinite; }
+
+  /* ── Typing dots ── */
+  .typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    animation: typingBounce 1.4s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  /* ── Gradient shimmer ── */
+  .shimmer-gradient {
+    background: linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.06) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmerSlide 2s ease-in-out infinite;
+  }
+
+  /* ── Header gradient border ── */
+  .header-gradient-border {
+    position: relative;
+  }
+  .header-gradient-border::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--accent-cyan) 20%, var(--accent-indigo) 50%, var(--accent-purple) 80%, transparent 100%);
+    opacity: 0.5;
+  }
+
+  /* ── Ambient glow orb ── */
+  .ambient-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* ── Live indicator ── */
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    position: relative;
+  }
+  .live-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent-emerald);
+    animation: livePing 2s ease-out infinite;
+  }
 
   /* ── Toast Overrides ── */
   .toast-custom {
@@ -527,4 +636,30 @@
 @keyframes radarSweep {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-8px); opacity: 1; }
+}
+
+@keyframes shimmerSlide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes livePing {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

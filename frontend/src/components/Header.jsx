@@ -40,25 +40,24 @@ export default function Header({ currentCity, onSelectCity, speechEnabled, setSp
   };
 
   return (
-    <header className="glass-panel sticky top-0 z-50 border-b px-4 py-2.5" style={{ borderColor: 'var(--border-glass)' }}>
+    <header className="glass-panel header-gradient-border sticky top-0 z-50 px-4 py-2.5">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
 
         {/* Brand */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <motion.div
+            className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20"
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+          >
             <span className="text-lg">⛅</span>
-          </div>
+          </motion.div>
           <div className="hidden sm:block">
-            <h1 className="text-lg font-extrabold tracking-tight flex items-center gap-1.5" style={{ fontFamily: 'var(--font-heading)' }}>
-              Weather<span style={{ color: 'var(--accent-cyan)' }}>GPT</span>
-              <span className="badge badge-cyan text-[9px] py-0 px-1.5 ml-1 hide-mobile">
-                <Cpu className="w-2.5 h-2.5" /> SIH26068
-              </span>
+            <h1 className="text-lg font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+              Weather<span className="text-gradient">GPT</span>
             </h1>
-            <p className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
               Ministry of Earth Sciences
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent-emerald)' }}></span>
-              <span style={{ color: 'var(--accent-emerald)', fontSize: '9px', fontWeight: 700 }}>LIVE</span>
             </p>
           </div>
         </div>

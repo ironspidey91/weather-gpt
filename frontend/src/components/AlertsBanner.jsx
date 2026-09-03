@@ -178,18 +178,21 @@ export default function AlertsBanner({ weatherData, externalOpen, onExternalClos
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="glass-card w-full h-full min-h-screen rounded-none p-5 relative overflow-y-auto"
+              className="glass-card w-full max-w-lg max-h-[85vh] rounded-2xl p-5 relative overflow-y-auto"
               style={{ border: `1px solid ${sev.border}` }}
               onClick={e => e.stopPropagation()}
             >
               <button onClick={closeModal}
-                className="absolute top-4 right-4 p-1 rounded-lg transition-colors"
-                style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)' }}>
+                className="absolute top-4 right-4 p-1.5 rounded-lg transition-colors hover:bg-white/10"
+                style={{ color: 'var(--text-muted)' }}>
                 <X className="w-5 h-5" />
               </button>
 
               <div className="flex items-center gap-3 pb-4" style={{ borderBottom: '1px solid var(--border-glass)' }}>
-                <ShieldAlert className="w-6 h-6" style={{ color: sev.text }} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: sev.bg, border: `1px solid ${sev.border}` }}>
+                  <ShieldAlert className="w-5 h-5" style={{ color: sev.text }} />
+                </div>
                 <div>
                   <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>MoES Emergency Weather Bulletin</h2>
                   <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Integrated Disaster Warning Platform</p>
@@ -200,23 +203,27 @@ export default function AlertsBanner({ weatherData, externalOpen, onExternalClos
                 {alerts.map(alert => {
                   const s = SEVERITY_COLORS[alert.severity] || SEVERITY_COLORS.YELLOW;
                   return (
-                    <div key={alert.id} className="glass-panel p-4 rounded-xl space-y-2" style={{ border: `1px solid ${s.border}` }}>
-                      <div className="flex items-center justify-between">
-                        <span className={`badge ${s.badgeClass} text-[9px]`}>{alert.severity} ADVISORY</span>
-                        <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>{alert.id.slice(0, 16)}</span>
-                      </div>
-                      <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{alert.title}</h3>
-                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{alert.details}</p>
-                      <div className="pt-2" style={{ borderTop: '1px solid var(--border-glass)' }}>
-                        <p className="text-[10px] font-bold mb-1" style={{ color: s.text }}>Recommended Precautions:</p>
-                        <ul className="space-y-1">
-                          {alert.safetyTips.map((tip, i) => (
-                            <li key={i} className="text-xs flex items-start gap-2" style={{ color: 'var(--text-secondary)' }}>
-                              <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5" style={{ color: 'var(--accent-emerald)' }} />
-                              <span>{tip}</span>
-                            </li>
-                          ))}
-                        </ul>
+                    <div key={alert.id} className="glass-panel rounded-xl overflow-hidden flex" style={{ border: `1px solid ${s.border}` }}>
+                      {/* Severity stripe */}
+                      <div className="w-1 shrink-0" style={{ background: s.text }} />
+                      <div className="p-4 space-y-2 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className={`badge ${s.badgeClass} text-[9px]`}>{alert.severity} ADVISORY</span>
+                          <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>{alert.id.slice(0, 16)}</span>
+                        </div>
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{alert.title}</h3>
+                        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{alert.details}</p>
+                        <div className="pt-2" style={{ borderTop: '1px solid var(--border-glass)' }}>
+                          <p className="text-[10px] font-bold mb-1" style={{ color: s.text }}>Recommended Precautions:</p>
+                          <ul className="space-y-1">
+                            {alert.safetyTips.map((tip, i) => (
+                              <li key={i} className="text-xs flex items-start gap-2" style={{ color: 'var(--text-secondary)' }}>
+                                <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5" style={{ color: 'var(--accent-emerald)' }} />
+                                <span>{tip}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   );

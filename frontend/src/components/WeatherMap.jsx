@@ -16,9 +16,6 @@ L.Icon.Default.mergeOptions({
 });
 
 // ── Map layer configurations (all 100% free, no API key needed) ──
-// Dark mode has been removed app-wide, so every layer now uses a single
-// light OpenStreetMap base that actually shows place-name labels
-// (the old CartoDB dark tile looked "all black" with unreadable labels).
 const OWM_KEY = import.meta.env?.VITE_OPENWEATHER_API_KEY || '';
 
 const LIGHT_BASE = {
@@ -119,7 +116,7 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
 
   const { city, coords, temperature, condition, humidity, windSpeed, windCompass } = weatherData;
   const center = [coords.lat, coords.lon];
-  const layer = MAP_LAYERS[activeLayer];
+  const layer = MAP_LAYERS[activeLayer] || MAP_LAYERS.standard;
   const baseLayer = layer.base;
 
   // Fetch latest RainViewer radar timestamp (free, no API key)
@@ -130,10 +127,6 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
         const latest = data.radar?.past?.slice(-1)[0];
         const host = data.host || 'https://tilecache.rainviewer.com';
         if (latest?.path) {
-          // RainViewer's `path` is already the full base path (e.g.
-          // "/v2/radar/72250d5768d7") — prepending "/v2/radar/" again,
-          // like the old code did, built a broken double-prefixed URL
-          // that silently 404'd, which is why radar never showed.
           setRadarUrl(`${host}${latest.path}/256/{z}/{x}/{y}/2/1_1.png`);
         } else {
           console.warn('[WeatherMap] RainViewer returned no radar frames.');
@@ -217,19 +210,21 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
             const Icon = cfg.icon;
             const isActive = activeLayer === key;
             return (
-              <button
+              <motion.button
                 key={key}
                 onClick={() => setActiveLayer(key)}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold relative"
                 style={isActive
                   ? { background: 'var(--accent-cyan)', color: 'var(--bg-primary)' }
                   : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', border: '1px solid transparent' }
                 }
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 title={cfg.label}
               >
                 <Icon className="w-3 h-3" />
                 <span className="hidden sm:inline">{cfg.label}</span>
-              </button>
+              </motion.button>
             );
           })}
 
@@ -276,7 +271,7 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
       )}
 
       {/* Map container */}
-      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%', cursor: pickerActive ? 'crosshair' : undefined, position: 'relative' }}>
+      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%', cursor: pickerActive ? 'crosshair' : undefined, position: 'relative', borderRadius: isExpanded ? '0' : '0 0 var(--radius-xl) var(--radius-xl)', overflow: 'hidden' }}>
         {/* Gradient legend for data overlay layers */}
         {layer.legend && (
           <div className="absolute z-[1000] rounded-lg px-2.5 py-2" style={{ bottom: '10px', right: '10px', background: 'rgba(255,255,255,0.95)', border: '1px solid var(--border-glass)', boxShadow: 'var(--shadow-md)', minWidth: '150px' }}>
@@ -292,6 +287,7 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
             )}
           </div>
         )}
+
         {isVisible ? (
           <MapContainer
             center={center}
@@ -306,11 +302,7 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
             <LocationPicker active={pickerActive} onPick={handlePickLocation} />
             {/* Base layer */}
             <TileLayer key={baseLayer.url} url={baseLayer.url} attribution={baseLayer.attribution} />
-            {/* Rain radar overlay — RainViewer's tile server only renders
-                natively up to zoom 10; requesting past that returns a
-                "zoom level not supported" placeholder tile. maxNativeZoom
-                tells Leaflet to stop requesting past 10 and instead
-                upscale the zoom-10 tile smoothly when the user zooms in further. */}
+            {/* Rain radar overlay */}
             {layer.overlay === 'rainviewer' && radarUrl && (
               <TileLayer
                 key={radarUrl}

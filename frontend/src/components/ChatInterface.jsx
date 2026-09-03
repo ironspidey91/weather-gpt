@@ -181,16 +181,19 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
   const badgeClass = (type) => TYPE_BADGE_MAP[type] || 'badge-cyan';
 
   return (
-    <div className="glass-card flex flex-col overflow-hidden shadow-2xl relative" style={{ height: '100%', minHeight: '500px', borderColor: 'var(--border-glass)' }}>
+    <div className="glass-card flex flex-col overflow-hidden shadow-2xl relative" style={{ height: '100%', minHeight: '500px', borderColor: 'var(--border-glass)', zIndex: 1 }}>
 
       {/* Chat Header */}
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-glass)', background: 'var(--bg-elevated)' }}>
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md">
+            <motion.div
+              className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md"
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: 'spring', stiffness: 400 }}
+            >
               <Bot className="w-4 h-4" />
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--accent-emerald)', border: '2px solid var(--bg-elevated)' }}></span>
+            </motion.div>
           </div>
           <div>
             <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>WeatherGPT</h2>
@@ -291,7 +294,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
           ))}
         </AnimatePresence>
 
-        {/* Loading */}
+        {/* Typing indicator */}
         {loading && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -300,10 +303,15 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
           >
             <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
               style={{ background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.25)', color: 'var(--accent-cyan)' }}>
-              <Bot className="w-3.5 h-3.5 animate-spin" />
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             </div>
-            <div className="glass-panel p-3 rounded-2xl rounded-bl-sm flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--accent-cyan)', border: '1px solid var(--border-glass)' }}>
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Analyzing weather data...
+            <div className="glass-panel p-3.5 rounded-2xl rounded-bl-sm flex items-center gap-3 shimmer-gradient" style={{ border: '1px solid var(--border-glass)', minWidth: '120px' }}>
+              <div className="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>Analyzing...</span>
             </div>
           </motion.div>
         )}
@@ -316,8 +324,11 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
         {SUGGESTION_PILLS.map((pill, i) => {
           const Icon = pill.icon;
           return (
-            <button
+            <motion.button
               key={i}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.25 }}
               onClick={() => handleSend(pill.label)}
               className="shrink-0 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 transition-all"
               style={{
@@ -325,11 +336,11 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
                 background: 'var(--bg-glass)',
                 color: pill.accent,
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = pill.accent + '60'; e.currentTarget.style.background = pill.accent + '10'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-glass)'; e.currentTarget.style.background = 'var(--bg-glass)'; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = pill.accent + '60'; e.currentTarget.style.background = pill.accent + '10'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-glass)'; e.currentTarget.style.background = 'var(--bg-glass)'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <Icon className="w-3 h-3" /> {pill.label}
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -359,15 +370,17 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
               {listening ? <MicOff className="w-4 h-4 animate-pulse" /> : <Mic className="w-4 h-4" />}
             </button>
           </div>
-          <button
+          <motion.button
             type="submit"
             disabled={!input.trim() || loading}
             className="btn-primary py-2.5 px-4 rounded-xl"
             id="send-btn"
             aria-label="Send message"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <Send className="w-4 h-4" />
-          </button>
+          </motion.button>
         </form>
       </div>
 
