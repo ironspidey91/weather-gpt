@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Layers, Maximize2, Minimize2, CloudRain, Gauge, Satellite, Thermometer, Wind } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { Layers, Maximize2, Minimize2, CloudRain, Gauge, Satellite, Thermometer, Wind, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { reverseGeocode } from '../services/weatherService';
 
 // Fix default marker icon issue with bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -91,11 +93,25 @@ function MapUpdater({ center, zoom }) {
   return null;
 }
 
-export default function WeatherMap({ weatherData }) {
+// Captures clicks on the map when picker mode is active and resolves
+// the nearest supported city via reverse geocoding.
+function LocationPicker({ active, onPick }) {
+  useMapEvents({
+    click(e) {
+      if (!active) return;
+      onPick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
+export default function WeatherMap({ weatherData, onLocationSelect }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeLayer, setActiveLayer] = useState('standard');
   const [isVisible, setIsVisible] = useState(true);
   const [radarUrl, setRadarUrl] = useState('');
+  const [pickerActive, setPickerActive] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const containerRef = useRef(null);
 
   const { city, coords, temperature, condition, humidity, windSpeed, windCompass } = weatherData;
@@ -144,6 +160,21 @@ export default function WeatherMap({ weatherData }) {
     setTimeout(() => map.invalidateSize(), 300);
     setTimeout(() => map.invalidateSize(), 800);
   }, []);
+
+  const handlePickLocation = useCallback(async (lat, lon) => {
+    if (!onLocationSelect) return;
+    setResolving(true);
+    try {
+      const city = await reverseGeocode(lat, lon);
+      onLocationSelect(city);
+      toast.success(`Showing weather for ${city} (nearest supported city)`);
+    } catch {
+      toast.error('Could not resolve that location. Try another spot.');
+    } finally {
+      setResolving(false);
+      setPickerActive(false);
+    }
+  }, [onLocationSelect]);
 
   return (
     <>
@@ -200,6 +231,23 @@ export default function WeatherMap({ weatherData }) {
             {coords.lat.toFixed(4)}°N, {coords.lon.toFixed(4)}°E
           </div>
 
+          {/* Location Picker Toggle */}
+          {onLocationSelect && (
+            <button
+              onClick={() => setPickerActive(!pickerActive)}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+              style={pickerActive
+                ? { background: 'var(--accent-blue)', color: '#fff' }
+                : { background: 'rgba(37, 99, 235, 0.08)', color: 'var(--accent-blue)', border: '1px solid rgba(37, 99, 235, 0.2)' }
+              }
+              title="Click anywhere on the map to check weather there"
+              id="location-picker-btn"
+            >
+              <MapPin className="w-3 h-3" />
+              <span className="hidden sm:inline">{pickerActive ? 'Click map...' : 'Pick location'}</span>
+            </button>
+          )}
+
           {/* Expand */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -211,8 +259,15 @@ export default function WeatherMap({ weatherData }) {
         </div>
       </div>
 
+      {/* Picker mode hint */}
+      {pickerActive && (
+        <div className="px-4 py-1.5 text-[11px] font-medium flex items-center gap-1.5" style={{ background: 'rgba(37, 99, 235, 0.06)', color: 'var(--accent-blue)', borderBottom: '1px solid rgba(37, 99, 235, 0.15)' }}>
+          <MapPin className="w-3 h-3" /> {resolving ? 'Finding nearest supported city…' : 'Click anywhere on the map to check that area\'s weather'}
+        </div>
+      )}
+
       {/* Map container */}
-      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%' }}>
+      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%', cursor: pickerActive ? 'crosshair' : undefined }}>
         {isVisible ? (
           <MapContainer
             center={center}
@@ -224,6 +279,7 @@ export default function WeatherMap({ weatherData }) {
             whenReady={handleMapReady}
           >
             <MapUpdater center={center} zoom={10} />
+            <LocationPicker active={pickerActive} onPick={handlePickLocation} />
             {/* Base layer */}
             <TileLayer key={baseLayer.url} url={baseLayer.url} attribution={baseLayer.attribution} />
             {/* Rain radar overlay — RainViewer's tile server only renders

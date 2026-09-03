@@ -15,7 +15,8 @@ import { fetchWeatherData, getUserLocation, reverseGeocode } from './services/we
 export default function App() {
   const [currentCity, setCurrentCity] = useState('New Delhi');
   const [weatherData, setWeatherData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // only true until first data ever arrives
+  const [refreshing, setRefreshing] = useState(false); // true during subsequent city switches
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [theme] = useState('light');
   const [locating, setLocating] = useState(false);
@@ -28,9 +29,12 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', 'light');
   }, []);
 
-  // Load weather data
+  // Load weather data. Crucially, only the very first load blocks the UI
+  // with a full skeleton — later city switches (e.g. from chat, or the
+  // map's location picker) just refresh data in place, so the rest of
+  // the app (including chat history) never unmounts.
   const loadCityData = useCallback(async (city) => {
-    setLoading(true);
+    setRefreshing(true);
     try {
       const data = await fetchWeatherData(city);
       setWeatherData(data);
@@ -38,7 +42,8 @@ export default function App() {
       console.error("Failed to load weather data:", err);
       toast.error('Failed to load weather data. Using fallback.');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -107,8 +112,8 @@ export default function App() {
       />
 
       {/* Main Content */}
-      {loading || !weatherData ? (
-        /* Loading skeleton */
+      {initialLoading || !weatherData ? (
+        /* Loading skeleton — only shown once, before the first city ever loads */
         <div className="skeleton-container animate-fade-in">
           <SkeletonBlock h="60px" />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -124,6 +129,17 @@ export default function App() {
         </div>
       ) : (
         <>
+          {/* Subtle refresh indicator for subsequent city switches —
+              the layout stays mounted, so chat history is preserved */}
+          {refreshing && (
+            <div style={{ position: 'fixed', top: 'calc(var(--header-h) + 8px)', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+              <div className="glass-card px-3 py-1.5 text-[11px] font-semibold flex items-center gap-2" style={{ color: 'var(--accent-blue)' }}>
+                <span className="animate-spin" style={{ width: 10, height: 10, border: '2px solid var(--border-glass)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', display: 'inline-block' }}></span>
+                Updating {currentCity}...
+              </div>
+            </div>
+          )}
+
           {/* Mobile Tab Navigation */}
           <div className="show-mobile-only" style={{ padding: '0.5rem 1rem 0' }}>
             <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-glass)' }}>
@@ -158,7 +174,7 @@ export default function App() {
               <AlertsBanner weatherData={weatherData} externalOpen={alertModalOpen} onExternalClose={() => setAlertModalOpen(false)} />
               <WeatherDashboard weatherData={weatherData} />
               <ForecastCharts weatherData={weatherData} />
-              <WeatherMap weatherData={weatherData} />
+              <WeatherMap weatherData={weatherData} onLocationSelect={setCurrentCity} />
               <ClimateInsights weatherData={weatherData} />
 
               {/* Footer inline */}
@@ -196,7 +212,7 @@ export default function App() {
               )}
               {mobileTab === 'map' && (
                 <motion.div key="map" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
-                  <WeatherMap weatherData={weatherData} />
+                  <WeatherMap weatherData={weatherData} onLocationSelect={setCurrentCity} />
                 </motion.div>
               )}
             </AnimatePresence>

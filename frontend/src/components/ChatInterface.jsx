@@ -35,15 +35,32 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
   const [copiedId, setCopiedId] = useState(null);
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const hasWelcomed = useRef(false);
+  const lastCityRef = useRef(null);
 
-  // Initialize welcome message when weather data changes
+  // Welcome message shows ONCE, on first mount only — switching cities
+  // afterward (from chat or the map) must never wipe the conversation.
   useEffect(() => {
-    if (weatherData) {
+    if (weatherData && !hasWelcomed.current) {
+      hasWelcomed.current = true;
+      lastCityRef.current = weatherData.city;
       setMessages([{
         id: 1,
         sender: 'ai',
         text: `**Welcome to WeatherGPT!** Your AI weather intelligence assistant.\n\nCurrently observing **${weatherData.city}** — **${weatherData.condition}** at **${weatherData.temperature}°C** (feels like ${weatherData.feelsLike}°C).\n\nAsk me about rain forecasts, severe alerts, air quality, farming advisories, climate trends, or travel weather!`,
         badges: ['AI Online', 'MoES Synced'],
+        type: 'general',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } else if (weatherData && lastCityRef.current && weatherData.city !== lastCityRef.current) {
+      // City changed some other way (map picker, header search) — note it
+      // inline instead of resetting the whole conversation.
+      lastCityRef.current = weatherData.city;
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        sender: 'ai',
+        text: `📍 Switched to **${weatherData.city}** — **${weatherData.condition}** at **${weatherData.temperature}°C**. What would you like to know?`,
+        badges: ['Location Updated'],
         type: 'general',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
@@ -89,6 +106,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
       }
 
       if (cityChanged) {
+        lastCityRef.current = targetCity; // pre-sync so the effect above doesn't also inject a duplicate switch note
         if (onCityChangeRequest) onCityChangeRequest(targetCity);
         contextData = await fetchWeatherData(targetCity);
       }
