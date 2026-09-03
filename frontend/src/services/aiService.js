@@ -118,15 +118,19 @@ function localWeatherEngine(query, ctx) {
   if (q.match(/rain|umbrella|wet|shower|precip|drizzle|pour/)) {
     const todayPop = daily[0]?.pop || 30;
     const tmrwPop = daily[1]?.pop || 50;
+    const timeMatch = q.match(/(\d{1,2})\s*(am|pm)/);
+    const timeNote = timeMatch
+      ? `\n\n*Note: hourly precipitation timing isn't in this data source — the ${todayPop}% figure is today's overall probability, not specifically for ${timeMatch[0]}.*`
+      : '';
     if (todayPop > 50) {
       return {
-        text: `**High Precipitation Alert for ${city} Today (${todayPop}% probability)**\n\nSatellite radar and atmospheric pressure data (${pressure} hPa) indicate rainfall expected later today. Current humidity is at ${hum}%.\n\n**Recommendations:**\n- Carry an umbrella or rain jacket\n- Avoid waterlogged roads and underpasses\n- Secure outdoor belongings\n\nTomorrow's rain probability: **${tmrwPop}%**`,
+        text: `**High Precipitation Alert for ${city} Today (${todayPop}% probability)**\n\nSatellite radar and atmospheric pressure data (${pressure} hPa) indicate rainfall expected later today. Current humidity is at ${hum}%.\n\n**Recommendations:**\n- Carry an umbrella or rain jacket\n- Avoid waterlogged roads and underpasses\n- Secure outdoor belongings\n\nTomorrow's rain probability: **${tmrwPop}%**${timeNote}`,
         type: 'advisory',
         badges: ['Rain Alert', `${todayPop}% Chance`, 'Carry Umbrella']
       };
     }
     return {
-      text: `**Low Precipitation Risk in ${city} Today** (${todayPop}% probability)\n\nConditions are currently **${condition}** at **${temp}°C**. Skies are mostly favorable for outdoor activities.\n\nHowever, tomorrow shows **${tmrwPop}% chance of rain** — plan accordingly.\n\n- **Humidity**: ${hum}%\n- **Wind**: ${wind} km/h ${windCompass}\n- **Pressure**: ${pressure} hPa`,
+      text: `**Low Precipitation Risk in ${city} Today** (${todayPop}% probability)\n\nConditions are currently **${condition}** at **${temp}°C**. Skies are mostly favorable for outdoor activities.\n\nHowever, tomorrow shows **${tmrwPop}% chance of rain** — plan accordingly.\n\n- **Humidity**: ${hum}%\n- **Wind**: ${wind} km/h ${windCompass}\n- **Pressure**: ${pressure} hPa${timeNote}`,
       type: 'info',
       badges: ['Low Rain Risk', 'Outdoor Safe']
     };
@@ -190,6 +194,21 @@ function localWeatherEngine(query, ctx) {
       text: `**Clothing Recommendation for ${city}** (${temp}°C)\n\nWeather is **pleasant and comfortable**!\n\n**What to Wear:**\n- Casual layered clothing — t-shirt with a light pullover\n- Comfortable for outdoor activities\n- Light rain jacket if evening plans (${daily[0]?.pop}% rain chance)\n\nSunset at **${sunset}** — evenings may be cooler.`,
       type: 'lifestyle',
       badges: ['Comfort Weather', 'Pleasant Day']
+    };
+  }
+
+  // 6.5 Air Conditioner / Cooling temperature
+  if (q.match(/\bac\b|air.?condition|thermostat|cooling|set.*temp|what temp.*ac|ac.*temp/)) {
+    let rec = 24;
+    let note = "A comfortable middle ground for most people.";
+    if (temp >= 35) { rec = 22; note = "It's very hot outside, so a lower setting helps the room catch up faster."; }
+    else if (temp >= 30) { rec = 23; note = "Warm conditions outside — this keeps the room cool without overworking the unit."; }
+    else if (temp <= 22) { rec = 26; note = "It's already mild outside, so you don't need to go much lower."; }
+    if (hum > 70) note += ` High humidity (${hum}%) makes it feel warmer than it is — pairing this with dry/dehumidify mode helps.`;
+    return {
+      text: `**AC Recommendation for ${city}**\n\nWith it currently **${temp}°C** (feels like ${feelsLike}°C) and **${hum}% humidity**, I'd set the AC to around **${rec}°C**.\n\n${note}`,
+      type: 'lifestyle',
+      badges: [`${rec}°C Suggested`, 'Comfort']
     };
   }
 

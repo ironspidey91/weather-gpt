@@ -46,8 +46,9 @@ const MAP_LAYERS = {
     overlay: {
       url: `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
       attribution: '&copy; OpenWeatherMap',
-      opacity: 0.65,
+      opacity: 0.85,
     },
+    legend: { title: 'Temperature (°C)', stops: ['#821692', '#3949ab', '#00bcd4', '#4caf50', '#ffeb3b', '#ff9800', '#f44336'], labels: ['-40', '-20', '0', '10', '20', '30', '40+'] },
   },
   wind: {
     label: 'Wind',
@@ -56,8 +57,9 @@ const MAP_LAYERS = {
     overlay: {
       url: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
       attribution: '&copy; OpenWeatherMap',
-      opacity: 0.65,
+      opacity: 0.85,
     },
+    legend: { title: 'Wind Speed (m/s)', stops: ['#ffffff', '#a1e3ff', '#3ab0ff', '#0064c8', '#6b2fbd', '#c81ee0'], labels: ['0', '5', '10', '20', '35', '50+'] },
   },
   pressure: {
     label: 'Pressure',
@@ -66,8 +68,9 @@ const MAP_LAYERS = {
     overlay: {
       url: `https://tile.openweathermap.org/map/pressure_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`,
       attribution: '&copy; OpenWeatherMap',
-      opacity: 0.65,
+      opacity: 0.85,
     },
+    legend: { title: 'Pressure (hPa)', stops: ['#0000ff', '#00c8ff', '#00ff96', '#ffff00', '#ff9600', '#ff0000'], labels: ['950', '990', '1010', '1020', '1040', '1070'] },
   },
   satellite: {
     label: 'Satellite',
@@ -125,13 +128,19 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
       .then(r => r.json())
       .then(data => {
         const latest = data.radar?.past?.slice(-1)[0];
-        if (latest) {
-          setRadarUrl(`https://tilecache.rainviewer.com/v2/radar/${latest.path}/256/{z}/{x}/{y}/6/1_1.png`);
+        const host = data.host || 'https://tilecache.rainviewer.com';
+        if (latest?.path) {
+          // RainViewer's `path` is already the full base path (e.g.
+          // "/v2/radar/72250d5768d7") — prepending "/v2/radar/" again,
+          // like the old code did, built a broken double-prefixed URL
+          // that silently 404'd, which is why radar never showed.
+          setRadarUrl(`${host}${latest.path}/256/{z}/{x}/{y}/2/1_1.png`);
+        } else {
+          console.warn('[WeatherMap] RainViewer returned no radar frames.');
         }
       })
       .catch(() => {
-        // Fallback: use nowcast path format
-        setRadarUrl('https://tilecache.rainviewer.com/v2/radar/nowcast_/256/{z}/{x}/{y}/6/1_1.png');
+        console.warn('[WeatherMap] Could not reach RainViewer API — radar layer will be unavailable.');
       });
   }, []);
 
@@ -267,7 +276,22 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
       )}
 
       {/* Map container */}
-      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%', cursor: pickerActive ? 'crosshair' : undefined }}>
+      <div style={{ height: isExpanded ? 'calc(100% - 44px)' : '332px', width: '100%', cursor: pickerActive ? 'crosshair' : undefined, position: 'relative' }}>
+        {/* Gradient legend for data overlay layers */}
+        {layer.legend && (
+          <div className="absolute z-[1000] rounded-lg px-2.5 py-2" style={{ bottom: '10px', right: '10px', background: 'rgba(255,255,255,0.95)', border: '1px solid var(--border-glass)', boxShadow: 'var(--shadow-md)', minWidth: '150px' }}>
+            <p className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{layer.legend.title}</p>
+            <div style={{ height: '8px', borderRadius: '4px', background: `linear-gradient(90deg, ${layer.legend.stops.join(', ')})` }}></div>
+            <div className="flex justify-between mt-0.5">
+              {layer.legend.labels.map((l, i) => (
+                <span key={i} className="text-[8px]" style={{ color: 'var(--text-muted)' }}>{l}</span>
+              ))}
+            </div>
+            {activeLayer === 'wind' && (
+              <p className="text-[8px] mt-1" style={{ color: 'var(--text-muted)' }}>Zoom in — wind is shown as sparse arrows</p>
+            )}
+          </div>
+        )}
         {isVisible ? (
           <MapContainer
             center={center}
