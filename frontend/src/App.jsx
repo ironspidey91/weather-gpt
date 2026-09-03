@@ -48,6 +48,25 @@ export default function App() {
     setHasViewedAlerts(false); // Reset alerts viewed state on new city
   }, [currentCity, loadCityData]);
 
+  // Auto-detect location on first load (silent — falls back to default city if denied)
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude: lat, longitude: lon } = position.coords;
+            const cityName = await reverseGeocode(lat, lon);
+            setCurrentCity(cityName);
+            toast.success(`📍 Location detected: ${cityName}`);
+          } catch { /* silently ignore, keep default city */ }
+        },
+        () => { /* user denied or unavailable — keep default city */ },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run only once on mount
+
   // Geolocation handler
   const handleLocate = useCallback(async () => {
     setLocating(true);

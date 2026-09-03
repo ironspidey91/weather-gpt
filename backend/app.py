@@ -11,26 +11,30 @@ CORS(app)  # allows the frontend (running on a different port) to call this back
 @app.route("/ask", methods=["POST"])
 def ask():
     """
-    Frontend sends: { "city": "Kolkata", "question": "will it rain tomorrow?" }
+    Frontend sends: { "city": "Kolkata", "question": "will it rain tomorrow?", "weather": {...} }
     We send back:   { "answer": "..." }
     """
     data = request.get_json() or {}
     city = data.get("city")
     question = data.get("question")
-    weather_data = data.get("weather") or data.get("weather_data")
+    frontend_weather = data.get("weather") or data.get("weather_data")
 
     if not question:
         return jsonify({"error": "Please provide a question"}), 400
 
-    if not weather_data:
-        if not city:
-            return jsonify({"error": "Please provide either city or weather data"}), 400
+    # Always fetch fresh weather from backend so we get hourly_rain / hourly_temp
+    weather_data = None
+    if city:
         weather_data = get_weather(city)
+
+    # If backend fetch failed, fall back to whatever the frontend sent
+    if weather_data is None:
+        weather_data = frontend_weather
 
     if weather_data is None:
         return jsonify({"error": "Could not fetch weather for that city"}), 500
 
-    # Ensure required fields exist in weather_data
+    # Normalise camelCase keys sent by the React frontend
     if "feels_like" not in weather_data and "feelsLike" in weather_data:
         weather_data["feels_like"] = weather_data["feelsLike"]
     if "wind_speed" not in weather_data and "windSpeed" in weather_data:

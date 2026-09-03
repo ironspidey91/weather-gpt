@@ -1,6 +1,7 @@
 from groq import Groq
 from dotenv import load_dotenv
 import os
+import datetime
 
 load_dotenv()
 
@@ -23,40 +24,59 @@ def ask_ai(question, weather_data):
             f"with {weather_data.get('humidity', '--')}% humidity and {weather_data.get('wind_speed', '--')} m/s wind."
         )
 
-    weather_text = (
-        f"City: {weather_data.get('city', 'Unknown')}\n"
-        f"Temperature: {weather_data.get('temperature', '--')}°C\n"
-        f"Feels like: {weather_data.get('feels_like', '--')}°C\n"
-        f"Humidity: {weather_data.get('humidity', '--')}%\n"
-        f"Conditions: {weather_data.get('description', '--')}\n"
-        f"Wind speed: {weather_data.get('wind_speed', '--')} m/s"
-    )
+    # Build rich weather context including forecast
+    city = weather_data.get('city', 'Unknown')
+    temp = weather_data.get('temperature', '--')
+    feels = weather_data.get('feels_like', '--')
+    humidity = weather_data.get('humidity', '--')
+    description = weather_data.get('description', '--')
+    wind = weather_data.get('wind_speed', '--')
+    hourly_rain = weather_data.get('hourly_rain', [])
+    hourly_temp = weather_data.get('hourly_temp', [])
 
-    prompt = f"""You are WeatherGPT — a friendly, knowledgeable AI assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
+    # Build time-labelled forecast (3-hour slots from now)
+    now = datetime.datetime.now()
+    forecast_lines = []
+    for i, pop in enumerate(hourly_rain[:8]):
+        slot_time = now + datetime.timedelta(hours=i * 3)
+        time_label = slot_time.strftime("%-I%p").lower()  # e.g. 2pm
+        temp_val = hourly_temp[i] if i < len(hourly_temp) else '--'
+        forecast_lines.append(f"  {time_label}: Rain {pop}%, Temp {temp_val}°C")
+
+    forecast_text = "\n".join(forecast_lines) if forecast_lines else "  (no forecast data available)"
+
+    system_msg = """You are WeatherGPT — a friendly, knowledgeable AI assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
 
 Personality: You are warm, conversational, witty, and approachable. Talk like a smart, helpful friend — not a rigid robot. Use natural language, vary your tone, and show personality. Be casual and fun.
 
 Core expertise: Weather, climate, atmospheric science, AQI, agricultural advisories, severe alerts, travel weather, lifestyle tips, and general knowledge.
 
-Conversation guidelines:
-- You can answer ANY question — weather or not. You're a smart AI, not just a weather bot.
-- For non-weather topics, answer helpfully and naturally. If it fits, casually tie in the current weather context (e.g. "Great question! Also, it's {weather_data.get('temperature', '--')}°C outside, perfect for...")
-- For weather topics, use real data from the context provided below. Be specific with numbers.
-- If asked about future weather (like rain tomorrow or at a specific time) and the data below only shows current weather, give your best general meteorological advice or admit you only have current live data, rather than just repeating current weather unhelpfully.
-- Keep responses concise (100-250 words) unless detail is needed.
+Rules:
+- You can answer ANY question, weather or not.
+- NEVER just repeat the current conditions verbatim as your entire answer.
+- For future weather questions (tomorrow, tonight, at 3pm, etc.), ALWAYS use the hourly forecast data provided. Reference specific time slots and rain percentages.
 - Use markdown: **bold** for key data, bullet points for lists.
+- Keep answers 80-220 words. Be specific, not vague."""
 
-CURRENT WEATHER CONTEXT:
-{weather_text}
+    user_msg = f"""CURRENT WEATHER — {city}:
+Temperature: {temp}°C (feels like {feels}°C)
+Humidity: {humidity}%
+Conditions: {description}
+Wind: {wind} m/s
+
+NEXT 24H FORECAST (3-hour slots):
+{forecast_text}
 
 USER'S QUESTION: "{question}"
-"""
+
+Respond helpfully using the forecast data above when relevant. Don't just copy the current conditions. Reason about it."""
 
     models_to_try = [
         os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        "llama-3.1-70b-versatile",
         "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
         "llama3-70b-8192",
+        "llama3-8b-8192",
     ]
 
     for model_name in models_to_try:
@@ -64,37 +84,40 @@ USER'S QUESTION: "{question}"
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "You are WeatherGPT, a helpful weather assistant."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "system", "content": system_msg},
+                    {"role": "user",   "content": user_msg}
                 ],
-                temperature=0.7,
-                max_tokens=500,
+                temperature=0.75,
+                max_tokens=600,
             )
             return response.choices[0].message.content
         except Exception as e:
             print(f"Error with model {model_name}: {e}")
             continue
 
+    # Only reach here if ALL models fail
+    if hourly_rain:
+        max_pop = max(hourly_rain)
+        return (
+            f"Right now in {city} it's **{temp}°C** ({description}). "
+            f"Over the next 24 hours, rain probability peaks at **{max_pop}%**. "
+            f"{'Carry an umbrella to be safe!' if max_pop > 40 else 'Rain is unlikely today.'}"
+        )
     return (
-        f"Currently in {weather_data.get('city', 'your area')}, the temperature is {weather_data.get('temperature', '--')}°C "
-        f"({weather_data.get('description', '--')}) with {weather_data.get('humidity', '--')}% humidity and {weather_data.get('wind_speed', '--')} m/s wind."
+        f"Currently in {city}: **{temp}°C** ({description}), humidity {humidity}%, wind {wind} m/s."
     )
 
 
 if __name__ == "__main__":
     sample_weather = {
         "city": "Kolkata",
-        "temperature": 28.97,
-        "feels_like": 35.97,
-        "humidity": 89,
-        "description": "moderate rain",
-        "wind_speed": 0
+        "temperature": 30,
+        "feels_like": 35,
+        "humidity": 81,
+        "description": "Partly Cloudy",
+        "wind_speed": 7,
+        "hourly_rain": [10, 20, 45, 70, 60, 30, 15, 10],
+        "hourly_temp": [30, 31, 31, 30, 29, 28, 28, 29],
     }
 
     question = input("Ask a weather question: ")

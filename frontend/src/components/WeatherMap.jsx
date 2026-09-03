@@ -22,7 +22,7 @@ const MAP_LAYERS = {
     icon: Layers,
     base: {
       dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
         attribution: '&copy; OpenStreetMap &copy; CARTO',
       },
       light: {
@@ -37,7 +37,7 @@ const MAP_LAYERS = {
     icon: CloudRain,
     base: {
       dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
         attribution: '&copy; OpenStreetMap &copy; CARTO',
       },
       light: {
