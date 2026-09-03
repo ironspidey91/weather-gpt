@@ -1,84 +1,63 @@
 // ================================================================
 // WeatherGPT v2.0 — Conversational AI Service
-// Groq API integration with intelligent fallback engine
+// Connected to Groq AI engine via ai_api.py backend / direct Groq
 // ================================================================
 
+const BACKEND_URL = import.meta.env?.VITE_BACKEND_URL || 'http://localhost:5000';
 const GROQ_API_KEY = import.meta.env?.VITE_GROQ_API_KEY || '';
-
-const SYSTEM_PROMPT = `You are WeatherGPT — a friendly, knowledgeable AI assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
-
-Personality: You are warm, conversational, witty, and approachable. Talk like a smart, helpful friend — not a rigid robot. Use natural language, vary your tone, and show personality. Be casual and fun.
-
-Core expertise: Weather, climate, atmospheric science, AQI, agricultural advisories, severe alerts, travel weather, lifestyle tips, and general knowledge.
-
-Conversation guidelines:
-- You can answer ANY question — weather or not. You're a smart AI, not just a weather bot.
-- For non-weather topics, answer helpfully and naturally. If it fits, casually tie in the current weather context (e.g. "Great question! Also, it's ${'{temperature}'}°C outside, perfect for...")
-- For weather topics, use real data from the context provided. Be specific with numbers.
-- Use markdown: **bold** for key data, bullet points for lists
-- Keep responses concise (100-250 words) unless detail is needed
-- Vary your response style — don't always use the same format
-- For severe weather, be direct and include safety steps
-- Reference IMD/MoES/INSAT-3DR when relevant for weather queries
-- For farmers, give crop-specific guidance based on conditions
-- Be engaging, funny when appropriate, and never refuse to answer
-- End with 2-3 badge labels on the last line: BADGES: [badge1, badge2]`;
-
-// Try Groq API first, fallback to local engine
+// Priority: 1. Python Flask backend (/ask running ai_api.py) -> 2. Direct Groq API -> 3. Local engine
 export async function processWeatherGPTQuery(query, weatherContext) {
+  // 1. Try Flask Backend running ai_api.py
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(`${BACKEND_URL}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        city: weatherContext.city,
+        question: query,
+        weather: {
+          city: weatherContext.city,
+          temperature: weatherContext.temperature,
+          feels_like: weatherContext.feelsLike,
+          humidity: weatherContext.humidity,
+          description: weatherContext.condition,
+          wind_speed: weatherContext.windSpeed
+        }
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.answer) {
+        return formatAiResponse(data.answer, query, weatherContext);
+      }
+    }
+  } catch (backendErr) {
+    // Backend is offline or timed out, continue to direct Groq or local engine
+  }
+
+  // 2. Try direct Groq API if key is available
   if (GROQ_API_KEY) {
     try {
-      return await queryGroqAPI(query, weatherContext);
+      return await queryDirectGroq(query, weatherContext);
     } catch (err) {
-      console.warn("Groq API failed, using fallback:", err.message);
+      console.warn("Direct Groq API failed, using fallback:", err.message);
     }
   }
+
+  // 3. Fallback to local intelligent weather engine
   return localWeatherEngine(query, weatherContext);
 }
 
-async function queryGroqAPI(query, weatherContext) {
-  const contextStr = `Current weather data for ${weatherContext.city}, ${weatherContext.state}:
-- Temperature: ${weatherContext.temperature}°C (Feels like ${weatherContext.feelsLike}°C)
-- Condition: ${weatherContext.condition}
-- Humidity: ${weatherContext.humidity}%
-- Wind: ${weatherContext.windSpeed} km/h ${weatherContext.windCompass}
-- Pressure: ${weatherContext.pressure} hPa
-- UV Index: ${weatherContext.uvIndex}
-- AQI: ${weatherContext.aqi.value} (${weatherContext.aqi.status})
-- Sunrise: ${weatherContext.sunrise}, Sunset: ${weatherContext.sunset}
-- Today's forecast: High ${weatherContext.daily[0]?.maxTemp}°C, Low ${weatherContext.daily[0]?.minTemp}°C, ${weatherContext.daily[0]?.pop}% rain chance
-- Tomorrow's forecast: High ${weatherContext.daily[1]?.maxTemp}°C, Low ${weatherContext.daily[1]?.minTemp}°C, ${weatherContext.daily[1]?.pop}% rain chance`;
-
-  const response = await fetch(
-    'https://api.groq.com/openai/v1/chat/completions',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-20b',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `${contextStr}\n\nUser Query: ${query}\n\nProvide a helpful, data-driven response. End with 2-3 relevant badge labels in this exact format on the last line:\nBADGES: [badge1, badge2, badge3]`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 800,
-      })
-    }
-  );
-
-  if (!response.ok) throw new Error(`Groq API: ${response.status}`);
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content || '';
-
-  // Extract badges from response
+function formatAiResponse(text, query, weatherContext) {
   const badgeMatch = text.match(/BADGES:\s*\[(.+)\]\s*$/m);
-  let badges = ['AI Analysis', weatherContext.condition];
+  let badges = ['Groq AI', weatherContext.condition];
   let cleanText = text;
 
   if (badgeMatch) {
@@ -86,7 +65,6 @@ async function queryGroqAPI(query, weatherContext) {
     cleanText = text.replace(/BADGES:\s*\[.+\]\s*$/m, '').trim();
   }
 
-  // Determine response type from content
   let type = 'general';
   const lower = query.toLowerCase();
   if (lower.match(/alert|warn|cyclone|flood|storm|extreme/)) type = 'alert';
@@ -97,6 +75,53 @@ async function queryGroqAPI(query, weatherContext) {
   else if (lower.match(/wear|cloth|jacket|hot|cold/)) type = 'lifestyle';
 
   return { text: cleanText, type, badges };
+}
+
+async function queryDirectGroq(query, weatherContext) {
+  const weatherText = `City: ${weatherContext.city}
+Temperature: ${weatherContext.temperature}°C
+Feels like: ${weatherContext.feelsLike}°C
+Humidity: ${weatherContext.humidity}%
+Conditions: ${weatherContext.condition}
+Wind speed: ${weatherContext.windSpeed} m/s`;
+
+  const prompt = `You are a helpful weather assistant for farmers and everyday people in India.
+
+Here is the current weather data:
+${weatherText}
+
+The user asked: "${query}"
+
+Answer clearly and simply in 2-3 sentences, in plain english language, or hinglish(hindi written in english) (as prompted) a non-expert would understand, dont change the language mid conversation, keep it.
+If relevant, mention any practical advice (e.g. carrying an umbrella, safety during heavy rain, etc).
+End with 2-3 relevant badges on the last line like:
+BADGES: [badge1, badge2]`;
+
+  const response = await fetch(
+    'https://api.groq.com/openai/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: "You are WeatherGPT, a helpful weather assistant." },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      })
+    }
+  );
+
+  if (!response.ok) throw new Error(`Groq API error: ${response.status}`);
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content || '';
+
+  return formatAiResponse(text, query, weatherContext);
 }
 
 // Enhanced local weather intelligence engine (30+ intent patterns)
