@@ -17,17 +17,16 @@ export default function App() {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [speechEnabled, setSpeechEnabled] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('wgpt-theme') || 'dark');
+  const [theme] = useState('light');
   const [locating, setLocating] = useState(false);
   const [mobileTab, setMobileTab] = useState('chat');
   const [alertModalOpen, setAlertModalOpen] = useState(false);
   const [hasViewedAlerts, setHasViewedAlerts] = useState(false);
 
-  // Apply theme
+  // Dark mode removed - always force light theme
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('wgpt-theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'light');
+  }, []);
 
   // Load weather data
   const loadCityData = useCallback(async (city) => {
@@ -47,25 +46,6 @@ export default function App() {
     loadCityData(currentCity);
     setHasViewedAlerts(false); // Reset alerts viewed state on new city
   }, [currentCity, loadCityData]);
-
-  // Auto-detect location on first load (silent — falls back to default city if denied)
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude: lat, longitude: lon } = position.coords;
-            const cityName = await reverseGeocode(lat, lon);
-            setCurrentCity(cityName);
-            toast.success(`📍 Location detected: ${cityName}`);
-          } catch { /* silently ignore, keep default city */ }
-        },
-        () => { /* user denied or unavailable — keep default city */ },
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
-      );
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run only once on mount
 
   // Geolocation handler
   const handleLocate = useCallback(async () => {
@@ -121,7 +101,6 @@ export default function App() {
         setSpeechEnabled={setSpeechEnabled}
         activeAlertCount={weatherData && !hasViewedAlerts ? (weatherData.daily[0]?.pop > 60 || weatherData.aqi?.value > 150 ? 2 : 1) : 0}
         theme={theme}
-        setTheme={setTheme}
         onLocate={handleLocate}
         locating={locating}
         onAlertClick={() => { setAlertModalOpen(true); setHasViewedAlerts(true); }}
@@ -179,7 +158,7 @@ export default function App() {
               <AlertsBanner weatherData={weatherData} externalOpen={alertModalOpen} onExternalClose={() => setAlertModalOpen(false)} />
               <WeatherDashboard weatherData={weatherData} />
               <ForecastCharts weatherData={weatherData} />
-              <WeatherMap weatherData={weatherData} theme={theme} />
+              <WeatherMap weatherData={weatherData} />
               <ClimateInsights weatherData={weatherData} />
 
               {/* Footer inline */}
@@ -217,7 +196,7 @@ export default function App() {
               )}
               {mobileTab === 'map' && (
                 <motion.div key="map" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
-                  <WeatherMap weatherData={weatherData} theme={theme} />
+                  <WeatherMap weatherData={weatherData} />
                 </motion.div>
               )}
             </AnimatePresence>

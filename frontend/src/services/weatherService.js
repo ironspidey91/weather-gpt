@@ -203,76 +203,11 @@ function getFallbackWeatherData(cityName, cityInfo) {
   };
 }
 
-// Search any city/town using Open-Meteo Geocoding API (free, no key)
-const geocodeCache = new Map();
-
-export async function searchCities(query) {
-  if (!query || query.trim().length < 2) return [];
-  const q = query.trim();
-  if (geocodeCache.has(q)) return geocodeCache.get(q);
-
-  try {
-    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=en&format=json`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const results = (data.results || []).map(r => ({
-      name: r.name,
-      state: r.admin1 || r.country || '',
-      country: r.country || '',
-      lat: r.latitude,
-      lon: r.longitude,
-      displayName: `${r.name}${r.admin1 ? ', ' + r.admin1 : ''}`,
-      region: getRegionFromCoords(r.latitude, r.longitude, r.country),
-    }));
-    geocodeCache.set(q, results);
-    return results;
-  } catch {
-    return [];
-  }
-}
-
-function getRegionFromCoords(lat, lon, country) {
-  if (country !== 'India') return country || 'International';
-  if (lat > 30) return 'North India';
-  if (lat > 25 && lon < 78) return 'North India';
-  if (lat > 25 && lon >= 78) return 'East India';
-  if (lat > 20 && lon < 76) return 'West India';
-  if (lat > 20 && lon >= 76 && lon < 82) return 'Central India';
-  if (lat > 20 && lon >= 82) return 'East India';
-  if (lon >= 90) return 'Northeast India';
-  if (lat <= 20) return 'South India';
-  return 'India';
-}
-
-// Dynamic city info store — persists geocoded cities for the session
-const dynamicCities = {};
-
-export function registerCity(name, info) {
-  dynamicCities[name] = info;
-}
-
-function getCityInfo(cityName) {
-  return CITY_COORDINATES[cityName] || dynamicCities[cityName] || null;
-}
-
 export async function fetchWeatherData(cityName = "New Delhi") {
   const cached = getCachedData(cityName);
   if (cached) return cached;
 
-  let city = getCityInfo(cityName);
-
-  // If city not in our lists, try geocoding it
-  if (!city) {
-    try {
-      const results = await searchCities(cityName);
-      if (results.length > 0) {
-        city = { lat: results[0].lat, lon: results[0].lon, state: results[0].state, region: results[0].region };
-        dynamicCities[cityName] = city;
-      }
-    } catch { /* fall through */ }
-  }
-
-  if (!city) city = CITY_COORDINATES["New Delhi"];
+  const city = CITY_COORDINATES[cityName] || CITY_COORDINATES["New Delhi"];
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,surface_pressure,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max&timezone=auto`;
@@ -292,30 +227,23 @@ export async function fetchWeatherData(cityName = "New Delhi") {
   }
 }
 
-// Reverse geocode coordinates to city name using Open-Meteo Geocoding
+// Reverse geocode coordinates to nearest city name
 export async function reverseGeocode(lat, lon) {
   try {
-    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${lat.toFixed(2)},${lon.toFixed(2)}&count=1&language=en&format=json`);
-    // Geocoding API doesn't support reverse lookup directly, so find nearest from known + use Nominatim fallback
-    const nomRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`);
-    if (nomRes.ok) {
-      const nomData = await nomRes.json();
-      const cityName = nomData.address?.city || nomData.address?.town || nomData.address?.village || nomData.address?.county || "New Delhi";
-      const state = nomData.address?.state || '';
-      // Register this city dynamically
-      dynamicCities[cityName] = { lat, lon, state, region: getRegionFromCoords(lat, lon, nomData.address?.country || 'India') };
-      return cityName;
-    }
-  } catch { /* fall through */ }
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&timezone=auto`);
+    if (!res.ok) throw new Error("Geocode failed");
 
-  // Fallback: find nearest from hardcoded list
-  let nearest = "New Delhi";
-  let minDist = Infinity;
-  for (const [name, info] of Object.entries(CITY_COORDINATES)) {
-    const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
-    if (d < minDist) { minDist = d; nearest = name; }
+    // Find nearest city from our list
+    let nearest = "New Delhi";
+    let minDist = Infinity;
+    for (const [name, info] of Object.entries(CITY_COORDINATES)) {
+      const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
+      if (d < minDist) { minDist = d; nearest = name; }
+    }
+    return nearest;
+  } catch {
+    return "New Delhi";
   }
-  return nearest;
 }
 
 // Get user's location using browser Geolocation API
