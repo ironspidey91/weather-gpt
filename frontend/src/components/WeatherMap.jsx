@@ -29,12 +29,14 @@ const MAP_LAYERS = {
     icon: Layers,
     base: LIGHT_BASE,
     overlay: null,
+    zoom: 10,
   },
   radar: {
     label: 'Rain Radar',
     icon: CloudRain,
     base: LIGHT_BASE,
     overlay: 'rainviewer',
+    zoom: 6,
   },
   temp: {
     label: 'Temperature',
@@ -46,6 +48,7 @@ const MAP_LAYERS = {
       opacity: 0.85,
     },
     legend: { title: 'Temperature (°C)', stops: ['#821692', '#3949ab', '#00bcd4', '#4caf50', '#ffeb3b', '#ff9800', '#f44336'], labels: ['-40', '-20', '0', '10', '20', '30', '40+'] },
+    zoom: 6,
   },
   wind: {
     label: 'Wind',
@@ -57,6 +60,7 @@ const MAP_LAYERS = {
       opacity: 0.85,
     },
     legend: { title: 'Wind Speed (m/s)', stops: ['#ffffff', '#a1e3ff', '#3ab0ff', '#0064c8', '#6b2fbd', '#c81ee0'], labels: ['0', '5', '10', '20', '35', '50+'] },
+    zoom: 6,
   },
   pressure: {
     label: 'Pressure',
@@ -68,6 +72,7 @@ const MAP_LAYERS = {
       opacity: 0.85,
     },
     legend: { title: 'Pressure (hPa)', stops: ['#0000ff', '#00c8ff', '#00ff96', '#ffff00', '#ff9600', '#ff0000'], labels: ['950', '990', '1010', '1020', '1040', '1070'] },
+    zoom: 6,
   },
   satellite: {
     label: 'Satellite',
@@ -77,6 +82,7 @@ const MAP_LAYERS = {
       attribution: '&copy; Esri — Source: Esri, USDA, USGS, GeoEye, and the GIS User Community',
     },
     overlay: null,
+    zoom: 12,
   },
 };
 
@@ -118,6 +124,7 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
   const center = [coords.lat, coords.lon];
   const layer = MAP_LAYERS[activeLayer] || MAP_LAYERS.standard;
   const baseLayer = layer.base;
+  const currentZoom = layer.zoom || 10;
 
   // Fetch latest RainViewer radar timestamp (free, no API key)
   useEffect(() => {
@@ -291,14 +298,14 @@ export default function WeatherMap({ weatherData, onLocationSelect }) {
         {isVisible ? (
           <MapContainer
             center={center}
-            zoom={10}
+            zoom={currentZoom}
             scrollWheelZoom={true}
             zoomControl={true}
             style={{ height: '100%', width: '100%' }}
             className="z-10"
             whenReady={handleMapReady}
           >
-            <MapUpdater center={center} zoom={10} />
+            <MapUpdater center={center} zoom={currentZoom} />
             <LocationPicker active={pickerActive} onPick={handlePickLocation} />
             {/* Base layer */}
             <TileLayer key={baseLayer.url} url={baseLayer.url} attribution={baseLayer.attribution} />
