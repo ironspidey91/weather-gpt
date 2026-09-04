@@ -280,31 +280,47 @@ export async function fetchWeatherData(cityName = "New Delhi") {
   }
 }
 
-// Reverse geocode coordinates to nearest city name using Geocoding API
+// Reverse geocode coordinates to actual city/town/village name using Nominatim (OpenStreetMap)
 export async function reverseGeocode(lat, lon) {
   try {
-    // Use the geocoding API for a real reverse lookup
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${lat.toFixed(2)},${lon.toFixed(2)}&count=1&language=en&format=json`;
-    // Open-Meteo doesn't have true reverse geocoding, so fall back to nearest from our list + dynamic
-    let nearest = "New Delhi";
-    let minDist = Infinity;
+    // Use Nominatim (free, no key) for real reverse geocoding
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': 'en' }
+    });
 
-    // Check hardcoded cities
-    for (const [name, info] of Object.entries(CITY_COORDINATES)) {
-      const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
-      if (d < minDist) { minDist = d; nearest = name; }
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address || {};
+      // Pick the most specific place name available
+      const placeName = addr.city || addr.town || addr.village || addr.suburb
+                     || addr.county || addr.state_district || addr.state || 'Unknown';
+
+      if (placeName && placeName !== 'Unknown') {
+        // Register it so weather fetching works for this location
+        registerDynamicCity(placeName, lat, lon, addr.state || '', addr.country || 'India');
+        return placeName;
+      }
     }
-
-    // Also check dynamically registered cities
-    for (const [name, info] of dynamicCoords.entries()) {
-      const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
-      if (d < minDist) { minDist = d; nearest = name; }
-    }
-
-    return nearest;
-  } catch {
-    return "New Delhi";
+  } catch (err) {
+    console.warn('[MausamAI] Nominatim reverse geocoding failed, falling back:', err.message);
   }
+
+  // Fallback: find nearest from hardcoded + dynamic cities
+  let nearest = "New Delhi";
+  let minDist = Infinity;
+
+  for (const [name, info] of Object.entries(CITY_COORDINATES)) {
+    const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
+    if (d < minDist) { minDist = d; nearest = name; }
+  }
+
+  for (const [name, info] of dynamicCoords.entries()) {
+    const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
+    if (d < minDist) { minDist = d; nearest = name; }
+  }
+
+  return nearest;
 }
 
 // Get user's location using browser Geolocation API
