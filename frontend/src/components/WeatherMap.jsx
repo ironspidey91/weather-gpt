@@ -82,7 +82,7 @@ const MAP_LAYERS = {
       attribution: '&copy; Esri — Source: Esri, USDA, USGS, GeoEye, and the GIS User Community',
     },
     overlay: null,
-    zoom: 12,
+    zoom: 5,
   },
 };
 
