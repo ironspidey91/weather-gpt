@@ -181,7 +181,7 @@ export default function App() {
               <footer className="inline-footer">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px]" style={{ color: 'var(--text-muted)' }}>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>WeatherGPT</span>
+                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>MausamAI</span>
                     <span>&bull; Smart India Hackathon (SIH26068)</span>
                   </div>
                   <div className="flex items-center gap-3">

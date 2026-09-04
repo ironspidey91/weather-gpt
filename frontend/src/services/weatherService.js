@@ -1,5 +1,5 @@
 // ================================================================
-// WeatherGPT v2.0 — Weather Data Service
+// MausamAI v2.0 — Weather Data Service
 // Powered by Open-Meteo API with geolocation & caching
 // ================================================================
 

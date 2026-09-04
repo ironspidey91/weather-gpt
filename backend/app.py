@@ -37,7 +37,7 @@ def ask():
 
 @app.route("/")
 def home():
-    return "WeatherGPT backend is running!"
+    return "MausamAI backend is running!"
 
 
 if __name__ == "__main__":

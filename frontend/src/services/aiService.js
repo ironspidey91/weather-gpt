@@ -1,5 +1,5 @@
 // ================================================================
-// WeatherGPT v2.0 — Conversational AI Service
+// MausamAI v2.0 — Conversational AI Service
 // Groq API integration with intelligent fallback engine
 // ================================================================
 
@@ -13,13 +13,13 @@ if (!GROQ_API_KEY) {
   // (Vite bakes VITE_* vars in at BUILD time, so just adding the var
   // isn't enough — it must be set before the build runs).
   console.warn(
-    '[WeatherGPT] VITE_GROQ_API_KEY is missing. Falling back to the static ' +
+    '[MausamAI] VITE_GROQ_API_KEY is missing. Falling back to the static ' +
     'rule-based engine for every message. Set it in your deployment\'s ' +
     'environment variables and rebuild to enable real AI responses.'
   );
 }
 
-const SYSTEM_PROMPT = `You are WeatherGPT, a knowledgeable, conversational AI assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
+const SYSTEM_PROMPT = `You are MausamAI, a knowledgeable, conversational AI assistant built for India's Ministry of Earth Sciences (MoES) under Smart India Hackathon (SIH26068).
 
 You are a genuine general-purpose assistant, not a scripted bot. Think through each question and respond the way a real, well-informed language model would — reason about what's actually being asked, pull in relevant facts, and give a substantive answer.
 
@@ -35,12 +35,12 @@ Style:
 - End with 2-3 short badge labels on the last line in this exact format: BADGES: [badge1, badge2]`;
 
 // Try Groq API first, fallback to local engine
-export async function processWeatherGPTQuery(query, weatherContext) {
+export async function processMausamAIQuery(query, weatherContext) {
   if (GROQ_API_KEY) {
     try {
       return await queryGroqAPI(query, weatherContext);
     } catch (err) {
-      console.warn("[WeatherGPT] Groq API call failed, using static fallback engine:", err.message);
+      console.warn("[MausamAI] Groq API call failed, using static fallback engine:", err.message);
     }
   }
   return localWeatherEngine(query, weatherContext);
@@ -259,7 +259,7 @@ function localWeatherEngine(query, ctx) {
   if (q.match(/^(hi|hello|hey|namaste|good morning|good evening|good afternoon|sup|yo)/)) {
     const greetings = [
       `Hey there! 👋 It's **${temp}°C** and **${condition.toLowerCase()}** in ${city} right now. What can I help you with — rain check, air quality, or maybe what to wear today?`,
-      `Hi! Welcome to WeatherGPT 🌤️ Right now in **${city}** it's **${temp}°C**, feels like **${feelsLike}°C**. ${daily[0]?.pop > 40 ? "Heads up — there's a decent chance of rain today!" : "Looking pretty clear out there."} What's on your mind?`,
+      `Hi! Welcome to MausamAI 🌤️ Right now in **${city}** it's **${temp}°C**, feels like **${feelsLike}°C**. ${daily[0]?.pop > 40 ? "Heads up — there's a decent chance of rain today!" : "Looking pretty clear out there."} What's on your mind?`,
       `Namaste! 🙏 Currently **${condition.toLowerCase()}** at **${temp}°C** in ${city}. Humidity's at ${hum}% and wind is ${wind} km/h. Ask me anything — forecasts, alerts, air quality, you name it!`,
     ];
     return {
@@ -296,9 +296,9 @@ function localWeatherEngine(query, ctx) {
   // 13. Who are you / about
   if (q.match(/who are you|what are you|about|your name|introduce/)) {
     return {
-      text: `I'm **WeatherGPT** — your AI-powered weather intelligence assistant! 🤖🌦️\n\nBuilt for India's **Ministry of Earth Sciences** under the Smart India Hackathon (SIH26068), I specialize in:\n\n- Real-time weather analysis & forecasts\n- Severe weather alerts & safety guidance\n- Air quality monitoring & health advisories\n- Agricultural advisories for farmers\n- Climate trends & historical data\n\nI use data from **IMD, INSAT-3DR satellites**, and the Open-Meteo API. Currently tracking weather for **${city}** — ask me anything!`,
+      text: `I'm **MausamAI** — your AI-powered weather intelligence assistant! 🤖🌦️\n\nBuilt for India's **Ministry of Earth Sciences** under the Smart India Hackathon (SIH26068), I specialize in:\n\n- Real-time weather analysis & forecasts\n- Severe weather alerts & safety guidance\n- Air quality monitoring & health advisories\n- Agricultural advisories for farmers\n- Climate trends & historical data\n\nI use data from **IMD, INSAT-3DR satellites**, and the Open-Meteo API. Currently tracking weather for **${city}** — ask me anything!`,
       type: 'general',
-      badges: ['WeatherGPT', 'SIH26068', 'MoES']
+      badges: ['MausamAI', 'SIH26068', 'MoES']
     };
   }
 

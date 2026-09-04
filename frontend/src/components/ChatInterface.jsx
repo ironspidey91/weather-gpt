@@ -3,7 +3,7 @@ import { Send, Bot, User, Sparkles, Mic, MicOff, Volume2, Copy, Check, RefreshCw
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { processWeatherGPTQuery, speakText, stopSpeech } from '../services/aiService';
+import { processMausamAIQuery, speakText, stopSpeech } from '../services/aiService';
 import { CITY_LIST, fetchWeatherData } from '../services/weatherService';
 import { toast } from 'react-hot-toast';
 
@@ -47,7 +47,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
       setMessages([{
         id: 1,
         sender: 'ai',
-        text: `**Welcome to WeatherGPT!** Your AI weather intelligence assistant.\n\nCurrently observing **${weatherData.city}** — **${weatherData.condition}** at **${weatherData.temperature}°C** (feels like ${weatherData.feelsLike}°C).\n\nAsk me about rain forecasts, severe alerts, air quality, farming advisories, climate trends, or travel weather!`,
+        text: `**Welcome to MausamAI!** Your AI weather intelligence assistant.\n\nCurrently observing **${weatherData.city}** — **${weatherData.condition}** at **${weatherData.temperature}°C** (feels like ${weatherData.feelsLike}°C).\n\nAsk me about rain forecasts, severe alerts, air quality, farming advisories, climate trends, or travel weather!`,
         badges: ['AI Online', 'MoES Synced'],
         type: 'general',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -111,7 +111,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
         contextData = await fetchWeatherData(targetCity);
       }
 
-      const response = await processWeatherGPTQuery(text, contextData);
+      const response = await processMausamAIQuery(text, contextData);
 
       const aiMsg = {
         id: Date.now() + 1,
@@ -196,7 +196,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
             </motion.div>
           </div>
           <div>
-            <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>WeatherGPT</h2>
+            <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>MausamAI</h2>
             <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
               {weatherData?.city} Station • NLP Engine
             </p>
@@ -209,7 +209,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
             setMessages([{
               id: Date.now(),
               sender: 'ai',
-              text: `Chat reset. WeatherGPT active for **${weatherData.city}**. How can I help?`,
+              text: `Chat reset. MausamAI active for **${weatherData.city}**. How can I help?`,
               badges: ['Reset'],
               type: 'general',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

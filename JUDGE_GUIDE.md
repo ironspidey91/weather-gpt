@@ -1,4 +1,4 @@
-# 🏆 WeatherGPT — Complete Judge & Presentation Guide
+# 🏆 MausamAI — Complete Judge & Presentation Guide
 > **Smart India Hackathon (SIH26068) | Ministry of Earth Sciences (MoES)**  
 > *AI-Powered Weather Intelligence, Emergency Advisories, and Agromet System*
 
@@ -9,8 +9,8 @@
 ### **Problem Statement**
 Traditional weather portals (like standard meteorological websites) display complex, raw numerical charts and technical telemetry (hPa, UV indices, wind vectors) that are difficult for everyday citizens, farmers, and disaster management teams to interpret quickly during emergencies.
 
-### **Our Solution: WeatherGPT**
-WeatherGPT is a modern, full-stack, AI-powered conversational weather platform. It bridges the gap between complex meteorological data and actionable human intelligence. 
+### **Our Solution: MausamAI**
+MausamAI is a modern, full-stack, AI-powered conversational weather platform. It bridges the gap between complex meteorological data and actionable human intelligence. 
 
 Key capabilities:
 1. **Natural Language Conversational Assistant**: Allows users to ask questions like *"Will it rain in Delhi today?"* or *"What should farmers in Pune sow this season?"* in plain English or Hinglish.
@@ -82,29 +82,29 @@ To impress judges during your demo, use these exact domain-specific terms:
 
 ## ❓ 5. Anticipated Judge Questions & Winning Answers
 
-### **Q1: What problem does WeatherGPT solve that existing weather apps (like Google Weather or AccuWeather) don't?**
-> **Answer**: Existing weather apps are **passive data displays** — they give you raw numbers (e.g., "Humidity 82%, Pressure 1008 hPa") and leave it to the user to deduce what that means. WeatherGPT is **actionable and conversational**. It converts telemetry into plain-language advice: whether a farmer should delay pesticide spraying today due to wind speeds, whether an asthmatic person needs an N95 mask based on AQI, or what clothes to wear. It democratizes meteorological intelligence.
+### **Q1: What problem does MausamAI solve that existing weather apps (like Google Weather or AccuWeather) don't?**
+> **Answer**: Existing weather apps are **passive data displays** — they give you raw numbers (e.g., "Humidity 82%, Pressure 1008 hPa") and leave it to the user to deduce what that means. MausamAI is **actionable and conversational**. It converts telemetry into plain-language advice: whether a farmer should delay pesticide spraying today due to wind speeds, whether an asthmatic person needs an N95 mask based on AQI, or what clothes to wear. It democratizes meteorological intelligence.
 
 ### **Q2: How does the AI chatbot work? What happens if the Groq API key runs out of quota or goes offline?**
-> **Answer**: WeatherGPT uses a **Hybrid Dual-Engine Architecture**:
+> **Answer**: MausamAI uses a **Hybrid Dual-Engine Architecture**:
 > - **Primary Engine**: Sends structured real-time weather context to the **Groq API** (`gpt-oss-20b` / LLaMA model) using a custom system prompt built for MoES/SIH context.
 > - **Fallback Engine**: If the API key is missing, invalid, or offline, the app seamlessly switches to our **Local Rule-Based NLP Engine** built in JavaScript (`aiService.js`). This engine uses pattern-matching against 30+ intent categories (Rain, Severe Alerts, AQI, Agromet, Clothing, Travel, Forecasts) to deliver intelligent, formatted responses instantly with **zero failure rate**.
 
 ### **Q3: Where do you get your weather and map data? Are there high API costs?**
-> **Answer**: We designed WeatherGPT with a **100% cost-effective, open-source model**:
+> **Answer**: We designed MausamAI with a **100% cost-effective, open-source model**:
 > - **Weather Telemetry & Forecasts**: Derived from the **Open-Meteo API** (completely free, open-access meteorological model synced with global weather stations).
 > - **Radar Overlays**: Powered by **RainViewer Public Tile API** for live Doppler rain radar maps.
 > - **Maps & Satellite Imagery**: Rendered using **Leaflet.js** with open tiles from Stadia Maps, OpenStreetMap, and Esri World Imagery.
 > - **Data Efficiency**: We implement a 10-minute client-side caching layer in memory (`weatherCache`) to prevent rate-limiting and unnecessary requests.
 
-### **Q4: How does WeatherGPT assist rural communities and Indian farmers?**
+### **Q4: How does MausamAI assist rural communities and Indian farmers?**
 > **Answer**: We built an **Agromet Intelligence Module** (`ClimateInsights.jsx`) co-aligned with **ICAR-IMD guidelines**:
 > - Calculates **soil moisture retention** from relative humidity and precipitation forecasts.
 > - Provides **pest germination warnings** (e.g., high humidity triggering fungal spores) and recommends pesticide spraying timing based on wind speeds (<12 km/h).
 > - Advises on crop seasonal actions for **Kharif, Rabi, and Zaid** cropping patterns.
 
 ### **Q5: Is the application accessible and responsive on mobile devices?**
-> **Answer**: Yes. WeatherGPT features a **responsive mobile-first design**:
+> **Answer**: Yes. MausamAI features a **responsive mobile-first design**:
 > - **Desktop**: Displays a side-by-side two-pane dashboard (fixed AI chat on the left, scrollable telemetry analytics on the right).
 > - **Mobile**: Adapts dynamically into a bottom-tabbed navigation bar (Chat, Dashboard, Map) for single-thumb navigation on smartphones.
 > - **Voice & Audio Accessibility**: Includes Web Speech API integration for **Voice Input** and **Text-to-Speech (TTS)** playback.
@@ -115,7 +115,7 @@ To impress judges during your demo, use these exact domain-specific terms:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                          WEATHERGPT HIGHLIGHTS                          │
+│                          MAUSAMAI HIGHLIGHTS                            │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ 🟢 Architecture   : React 18 + Vite + Tailwind CSS + Flask Backend      │
 │ 🟢 AI Engine      : Groq API (GPT-OSS / LLaMA) + Local Pattern NLP      │

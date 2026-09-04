@@ -1,4 +1,4 @@
-# WeatherGPT
+# MausamAI
 
 **Conversational AI for Weather Forecasting, Alerts & Climate Intelligence**
 
@@ -59,7 +59,7 @@ cp .env.example .env
 
 ```env
 # Optional: Gemini API key for AI-powered conversations
-# Without this, WeatherGPT uses its built-in intelligent response engine
+# Without this, MausamAI uses its built-in intelligent response engine
 VITE_GEMINI_API_KEY=your_api_key_here
 ```
 
@@ -86,7 +86,7 @@ src/
 
 ## API
 
-WeatherGPT uses the **Open-Meteo API** (free, no API key required) for real-time weather data. The Gemini API integration is optional and enhances the AI chat experience.
+MausamAI uses the **Open-Meteo API** (free, no API key required) for real-time weather data. The Gemini API integration is optional and enhances the AI chat experience.
 
 ## License
 

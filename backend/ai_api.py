@@ -74,7 +74,7 @@ If relevant, mention any practical advice (e.g. carrying an umbrella, safety dur
     messages=[
         {
             "role": "system",
-            "content": "You are WeatherGPT, a helpful weather assistant."
+            "content": "You are MausamAI, a helpful weather assistant."
         },
         {
             "role": "user",

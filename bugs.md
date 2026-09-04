@@ -1,6 +1,6 @@
-# WeatherGPT — Known Bugs & Issues Tracker
+# MausamAI — Known Bugs & Issues Tracker
 
-This document tracks identified bugs, edge cases, known limitations, and resolution statuses for the **WeatherGPT** application.
+This document tracks identified bugs, edge cases, known limitations, and resolution statuses for the **MausamAI** application.
 
 ---
 
