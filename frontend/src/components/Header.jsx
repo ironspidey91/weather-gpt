@@ -54,7 +54,7 @@ export default function Header({ currentCity, onSelectCity, speechEnabled, setSp
           </motion.div>
           <div className="hidden sm:block">
             <h1 className="text-lg font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-              Weather<span className="text-gradient">GPT</span>
+              Mausam<span className="text-gradient">AI</span>
             </h1>
             <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
               Ministry of Earth Sciences

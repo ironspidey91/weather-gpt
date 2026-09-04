@@ -47,7 +47,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
       setMessages([{
         id: 1,
         sender: 'ai',
-        text: `**Welcome to MausamAI!** Your AI weather intelligence assistant.\n\nCurrently observing **${weatherData.city}** — **${weatherData.condition}** at **${weatherData.temperature}°C** (feels like ${weatherData.feelsLike}°C).\n\nAsk me about rain forecasts, severe alerts, air quality, farming advisories, climate trends, or travel weather!`,
+        text: `**Hey, I'm Pavan!** Your MausamAI weather assistant.\n\nCurrently observing **${weatherData.city}** — **${weatherData.condition}** at **${weatherData.temperature}°C** (feels like ${weatherData.feelsLike}°C).\n\nAsk me about rain forecasts, severe alerts, air quality, farming advisories, climate trends, or travel weather!`,
         badges: ['AI Online', 'MoES Synced'],
         type: 'general',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -196,7 +196,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
             </motion.div>
           </div>
           <div>
-            <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>MausamAI</h2>
+            <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Pavan</h2>
             <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
               {weatherData?.city} Station • NLP Engine
             </p>
@@ -209,7 +209,7 @@ export default function ChatInterface({ weatherData, speechEnabled, onCityChange
             setMessages([{
               id: Date.now(),
               sender: 'ai',
-              text: `Chat reset. MausamAI active for **${weatherData.city}**. How can I help?`,
+              text: `Chat reset. Pavan active for **${weatherData.city}**. How can I help?`,
               badges: ['Reset'],
               type: 'general',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
