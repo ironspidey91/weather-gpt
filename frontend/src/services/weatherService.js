@@ -203,11 +203,64 @@ function getFallbackWeatherData(cityName, cityInfo) {
   };
 }
 
+// Dynamic city/town/village search using Open-Meteo Geocoding API
+// This enables searching ANY location in India (and worldwide)
+const geocodeCache = new Map();
+const GEOCODE_CACHE_MS = 30 * 60 * 1000; // 30 min cache
+
+export async function searchCities(query, countryFilter = 'IN') {
+  if (!query || query.trim().length < 2) return [];
+  const cacheKey = `${query.trim().toLowerCase()}__${countryFilter}`;
+  const cached = geocodeCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < GEOCODE_CACHE_MS) return cached.data;
+
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query.trim())}&count=40&language=en&format=json`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (!json.results) return [];
+
+    let results = json.results.map(r => ({
+      name: r.name,
+      state: r.admin1 || '',
+      country: r.country || '',
+      countryCode: r.country_code || '',
+      lat: r.latitude,
+      lon: r.longitude,
+      displayName: r.admin1
+        ? `${r.name}, ${r.admin1}${r.country_code !== 'IN' ? `, ${r.country}` : ''}`
+        : `${r.name}${r.country ? `, ${r.country}` : ''}`
+    }));
+
+    // Prioritise Indian results but include international ones too
+    if (countryFilter) {
+      const inCountry = results.filter(r => r.countryCode === countryFilter);
+      const outside = results.filter(r => r.countryCode !== countryFilter);
+      results = [...inCountry, ...outside];
+    }
+
+    geocodeCache.set(cacheKey, { data: results, ts: Date.now() });
+    return results;
+  } catch (err) {
+    console.warn('[MausamAI] Geocoding search failed:', err.message);
+    return [];
+  }
+}
+
+// Store dynamically resolved coordinates so subsequent fetches work
+const dynamicCoords = new Map();
+
+export function registerDynamicCity(name, lat, lon, state, country) {
+  dynamicCoords.set(name, { lat, lon, state: state || '', region: country || 'India' });
+}
+
 export async function fetchWeatherData(cityName = "New Delhi") {
   const cached = getCachedData(cityName);
   if (cached) return cached;
 
-  const city = CITY_COORDINATES[cityName] || CITY_COORDINATES["New Delhi"];
+  // Check hardcoded list first, then dynamic coords
+  const city = CITY_COORDINATES[cityName] || dynamicCoords.get(cityName) || CITY_COORDINATES["New Delhi"];
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,surface_pressure,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max&timezone=auto`;
@@ -227,19 +280,27 @@ export async function fetchWeatherData(cityName = "New Delhi") {
   }
 }
 
-// Reverse geocode coordinates to nearest city name
+// Reverse geocode coordinates to nearest city name using Geocoding API
 export async function reverseGeocode(lat, lon) {
   try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&timezone=auto`);
-    if (!res.ok) throw new Error("Geocode failed");
-
-    // Find nearest city from our list
+    // Use the geocoding API for a real reverse lookup
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${lat.toFixed(2)},${lon.toFixed(2)}&count=1&language=en&format=json`;
+    // Open-Meteo doesn't have true reverse geocoding, so fall back to nearest from our list + dynamic
     let nearest = "New Delhi";
     let minDist = Infinity;
+
+    // Check hardcoded cities
     for (const [name, info] of Object.entries(CITY_COORDINATES)) {
       const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
       if (d < minDist) { minDist = d; nearest = name; }
     }
+
+    // Also check dynamically registered cities
+    for (const [name, info] of dynamicCoords.entries()) {
+      const d = Math.sqrt(Math.pow(lat - info.lat, 2) + Math.pow(lon - info.lon, 2));
+      if (d < minDist) { minDist = d; nearest = name; }
+    }
+
     return nearest;
   } catch {
     return "New Delhi";
@@ -261,5 +322,6 @@ export function getUserLocation() {
   });
 }
 
+// Popular cities shown by default before user starts typing
 export const CITY_LIST = Object.keys(CITY_COORDINATES);
 export { CITY_COORDINATES };
